@@ -1,0 +1,847 @@
+{
+  "SellableFinishedGoodDto": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "name": {
+        "type": "string"
+      },
+      "sku": {
+        "type": "string"
+      },
+      "barcode": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "category": {
+        "type": "string"
+      },
+      "productType": {
+        "type": "string"
+      },
+      "retailPrice": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "costPrice": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "stockQuantity": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "isActive": {
+        "type": "boolean"
+      },
+      "isPerishable": {
+        "type": "boolean"
+      },
+      "recipeId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "recipeName": {
+        "type": "string"
+      },
+      "batchCode": {
+        "type": "string"
+      },
+      "locationId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "locationName": {
+        "type": "string"
+      }
+    }
+  },
+  "FinishedGoodsBatchDto": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "recipeId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "recipeName": {
+        "type": "string"
+      },
+      "batchCode": {
+        "type": "string"
+      },
+      "barcode": {
+        "type": "string"
+      },
+      "quantityProduced": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "quantityAvailable": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "expectedExpiry": {
+        "type": "string"
+      },
+      "locationId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "locationName": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      },
+      "producedAt": {
+        "type": "string"
+      }
+    }
+  },
+  "CustomBouquetComponent": {
+    "type": "object",
+    "properties": {
+      "productId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "productName": {
+        "type": "string"
+      },
+      "quantity": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "unitCost": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "number",
+          "string"
+        ],
+        "format": "double"
+      }
+    }
+  },
+  "CustomBouquetRequest": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "category": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "components": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CustomBouquetComponent"
+        }
+      },
+      "sellingPrice": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "laborCost": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "null",
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "image": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "locationId": {
+        "type": "string",
+        "format": "uuid"
+      }
+    }
+  },
+  "CustomBouquetSaveRequest": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "category": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "components": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/CustomBouquetComponent"
+        }
+      },
+      "sellingPrice": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "laborCost": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "null",
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "image": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "locationId": {
+        "type": "string",
+        "format": "uuid"
+      }
+    }
+  },
+  "MobileBootstrapResponse": {
+    "required": [
+      "company",
+      "user",
+      "branches",
+      "subscription",
+      "license",
+      "trial",
+      "taxSettings",
+      "printerSettings",
+      "permissions",
+      "language",
+      "theme",
+      "appVersion",
+      "minimumSupportedVersion",
+      "forceUpdate",
+      "featureFlags",
+      "generatedAtUtc"
+    ],
+    "type": "object",
+    "properties": {
+      "company": {
+        "$ref": "#/components/schemas/MobileBootstrapCompanyDto"
+      },
+      "user": {
+        "$ref": "#/components/schemas/MobileBootstrapUserDto"
+      },
+      "branches": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/MobileBootstrapBranchDto"
+        }
+      },
+      "subscription": {
+        "$ref": "#/components/schemas/MobileBootstrapSubscriptionDto"
+      },
+      "license": {
+        "$ref": "#/components/schemas/MobileBootstrapLicenseDto"
+      },
+      "trial": {
+        "$ref": "#/components/schemas/MobileBootstrapTrialDto"
+      },
+      "taxSettings": {
+        "$ref": "#/components/schemas/MobileBootstrapTaxSettingsDto"
+      },
+      "printerSettings": {
+        "$ref": "#/components/schemas/MobileBootstrapPrinterSettingsDto"
+      },
+      "permissions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "language": {
+        "type": "string"
+      },
+      "theme": {
+        "type": "string"
+      },
+      "appVersion": {
+        "type": "string"
+      },
+      "minimumSupportedVersion": {
+        "type": "string"
+      },
+      "forceUpdate": {
+        "type": "boolean"
+      },
+      "featureFlags": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/MobileFeatureFlagDto"
+        }
+      },
+      "generatedAtUtc": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  },
+  "MobileBootstrapCompanyDto": {
+    "required": [
+      "id",
+      "name",
+      "currency",
+      "region",
+      "timeZone",
+      "taxIdentifier"
+    ],
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "name": {
+        "type": "string"
+      },
+      "currency": {
+        "type": "string"
+      },
+      "region": {
+        "type": "string"
+      },
+      "timeZone": {
+        "type": "string"
+      },
+      "taxIdentifier": {
+        "type": [
+          "null",
+          "string"
+        ]
+      }
+    }
+  },
+  "MobileBootstrapUserDto": {
+    "required": [
+      "id",
+      "fullName",
+      "mobile",
+      "email",
+      "status"
+    ],
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "fullName": {
+        "type": "string"
+      },
+      "mobile": {
+        "type": "string"
+      },
+      "email": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "status": {
+        "$ref": "#/components/schemas/MobileUserStatus"
+      }
+    }
+  },
+  "LoginRequest": {
+    "required": [
+      "email",
+      "password"
+    ],
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      }
+    }
+  },
+  "MobileApiLoginRequest": {
+    "required": [
+      "companyId",
+      "identifier",
+      "password",
+      "deviceId",
+      "platform",
+      "manufacturer",
+      "model",
+      "osVersion",
+      "appVersion",
+      "pushToken",
+      "ipAddress"
+    ],
+    "type": "object",
+    "properties": {
+      "companyId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "identifier": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string"
+      },
+      "deviceId": {
+        "type": "string"
+      },
+      "platform": {
+        "type": "string"
+      },
+      "manufacturer": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "model": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "osVersion": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "appVersion": {
+        "type": "string"
+      },
+      "pushToken": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "ipAddress": {
+        "type": [
+          "null",
+          "string"
+        ]
+      }
+    }
+  },
+  "MobileAuthTokenResponse": {
+    "required": [
+      "accessToken",
+      "refreshToken",
+      "expiresAtUtc",
+      "companyId",
+      "mobileUserId",
+      "mobileDeviceId",
+      "bootstrap"
+    ],
+    "type": "object",
+    "properties": {
+      "accessToken": {
+        "type": "string"
+      },
+      "refreshToken": {
+        "type": "string"
+      },
+      "expiresAtUtc": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "companyId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "mobileUserId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "mobileDeviceId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "bootstrap": {
+        "$ref": "#/components/schemas/MobileBootstrapResponse"
+      }
+    }
+  },
+  "ProductSettingsRequest": {
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string"
+      },
+      "allowAsRawMaterial": {
+        "type": "boolean"
+      },
+      "availableOnline": {
+        "type": "boolean"
+      },
+      "commissionEligible": {
+        "type": "boolean"
+      }
+    }
+  },
+  "CreateProductRequest": {
+    "type": "object",
+    "properties": {
+      "productName": {
+        "type": "string"
+      },
+      "sku": {
+        "type": "string"
+      },
+      "barcode": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "productType": {
+        "type": "string"
+      },
+      "category": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "categoryId": {
+        "type": [
+          "null",
+          "string"
+        ],
+        "format": "uuid"
+      },
+      "brand": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "description": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "tags": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "unitOfMeasure": {
+        "type": "string"
+      },
+      "retailPrice": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "costPrice": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "wholesalePrice": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "null",
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "weddingEventPrice": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "null",
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "taxRuleId": {
+        "type": [
+          "null",
+          "string"
+        ],
+        "format": "uuid"
+      },
+      "taxCategory": {
+        "type": "string"
+      },
+      "trackInventory": {
+        "type": "boolean"
+      },
+      "trackBatch": {
+        "type": "boolean"
+      },
+      "openingStock": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "null",
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "reorderLevel": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "null",
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "shelfLifeDays": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "null",
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "expiryAlertDays": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "null",
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "temperatureNotes": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "isMultiUnit": {
+        "type": "boolean"
+      },
+      "avgUnitsPerStem": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "flowerAttributes": {
+        "oneOf": [
+          {
+            "type": "null"
+          },
+          {
+            "$ref": "#/components/schemas/FlowerAttributesRequest"
+          }
+        ]
+      },
+      "supplier": {
+        "oneOf": [
+          {
+            "type": "null"
+          },
+          {
+            "$ref": "#/components/schemas/SupplierInfoRequest"
+          }
+        ]
+      },
+      "accounting": {
+        "$ref": "#/components/schemas/AccountingInfoRequest"
+      },
+      "settings": {
+        "$ref": "#/components/schemas/ProductSettingsRequest"
+      }
+    }
+  },
+  "InventoryProductDto": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "name": {
+        "type": "string"
+      },
+      "productType": {
+        "type": "string"
+      },
+      "quantityAvailable": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      },
+      "unitCost": {
+        "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+        "type": [
+          "number",
+          "string"
+        ],
+        "format": "double"
+      },
+      "locationId": {
+        "type": "string",
+        "format": "uuid"
+      }
+    }
+  },
+  "FlowerAttributesRequest": {
+    "type": "object",
+    "properties": {
+      "color": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "variety": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "grade": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "countryOfOrigin": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "seasonality": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "SaveBouquetRecipeRequest": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "style": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "shape": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "height": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "components": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/BouquetComponent"
+        }
+      }
+    }
+  },
+  "BouquetComponent": {
+    "type": "object",
+    "properties": {
+      "flower": {
+        "type": "string"
+      },
+      "color": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "stems": {
+        "pattern": "^-?(?:0|[1-9]\\d*)$",
+        "type": [
+          "integer",
+          "string"
+        ],
+        "format": "int32"
+      }
+    }
+  }
+}

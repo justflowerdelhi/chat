@@ -1,0 +1,6490 @@
+{
+  "securitySchemes": {
+    "Bearer": {
+      "type": "http",
+      "description": "JWT Bearer token. Example: Bearer {token}",
+      "scheme": "bearer",
+      "bearerFormat": "JWT"
+    }
+  },
+  "auth": [
+    {
+      "path": "/api/auth/login",
+      "method": "post",
+      "summary": "POST api/auth/login",
+      "operationId": "Auth_Login",
+      "tags": [
+        "Auth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/LoginRequest",
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/auth/refresh",
+      "method": "post",
+      "summary": "Exchange a valid refresh token for a new access token + refresh token pair.\r\nThe old refresh token is revoked (rotation).",
+      "operationId": "Auth_Refresh",
+      "tags": [
+        "Auth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/RefreshRequest",
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/auth/revoke",
+      "method": "post",
+      "summary": "Revoke a refresh token (used on logout).",
+      "operationId": "Auth_Revoke",
+      "tags": [
+        "Auth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/RefreshRequest",
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "get",
+      "summary": "Get current user info from token. Used for session refresh/validation.",
+      "operationId": "Auth_GetMe",
+      "tags": [
+        "Auth"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/auth/verify-password",
+      "method": "post",
+      "summary": "Verify the current user's password. Used for sensitive actions (e.g. currency change).",
+      "operationId": "Auth_VerifyPassword",
+      "tags": [
+        "Auth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/VerifyPasswordRequest",
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/auth/change-password",
+      "method": "post",
+      "summary": "Change the current user's own password. Requires current password.\r\nAvailable to any authenticated user.",
+      "operationId": "Auth_ChangePassword",
+      "tags": [
+        "Auth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/ChangePasswordRequest",
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/auth/admin-reset-password",
+      "method": "post",
+      "summary": "Reset another user's password (admin action).\r\n- PlatformSuperAdmin / PlatformSupport: can reset any user\r\n- CompanyAdmin: can only reset users within their company",
+      "operationId": "Auth_AdminResetPassword",
+      "tags": [
+        "Auth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/AdminResetPasswordRequest",
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/auth/manageable-users",
+      "method": "get",
+      "summary": "List users that the current admin can manage passwords for.\r\n- PlatformSuperAdmin / PlatformSupport: all users\r\n- CompanyAdmin: users in their company only",
+      "operationId": "Auth_GetManageableUsers",
+      "tags": [
+        "Auth"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/auth/register",
+      "method": "post",
+      "summary": "POST api/v1/mobile/auth/register",
+      "operationId": "MobileAuth_Register",
+      "tags": [
+        "MobileAuth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MobileApiRegisterRequest",
+        "required": [
+          "companyName",
+          "ownerName",
+          "mobile",
+          "address",
+          "city",
+          "email",
+          "password",
+          "deviceId",
+          "platform",
+          "manufacturer",
+          "model",
+          "osVersion",
+          "appVersion",
+          "pushToken",
+          "ipAddress"
+        ],
+        "type": "object",
+        "properties": {
+          "companyName": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "osVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "appVersion": {
+            "type": "string"
+          },
+          "pushToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ipAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MobileAuthTokenResponse",
+          "required": [
+            "accessToken",
+            "refreshToken",
+            "expiresAtUtc",
+            "companyId",
+            "mobileUserId",
+            "mobileDeviceId",
+            "bootstrap"
+          ],
+          "type": "object",
+          "properties": {
+            "accessToken": {
+              "type": "string"
+            },
+            "refreshToken": {
+              "type": "string"
+            },
+            "expiresAtUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "companyId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "mobileUserId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "mobileDeviceId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "bootstrap": {
+              "$ref": "#/components/schemas/MobileBootstrapResponse"
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/auth/login",
+      "method": "post",
+      "summary": "Authenticates a mobile user and returns access tokens plus bootstrap payload.",
+      "operationId": "MobileAuth_Login",
+      "tags": [
+        "MobileAuth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MobileApiLoginRequest",
+        "required": [
+          "companyId",
+          "identifier",
+          "password",
+          "deviceId",
+          "platform",
+          "manufacturer",
+          "model",
+          "osVersion",
+          "appVersion",
+          "pushToken",
+          "ipAddress"
+        ],
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "osVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "appVersion": {
+            "type": "string"
+          },
+          "pushToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ipAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MobileAuthTokenResponse",
+          "required": [
+            "accessToken",
+            "refreshToken",
+            "expiresAtUtc",
+            "companyId",
+            "mobileUserId",
+            "mobileDeviceId",
+            "bootstrap"
+          ],
+          "type": "object",
+          "properties": {
+            "accessToken": {
+              "type": "string"
+            },
+            "refreshToken": {
+              "type": "string"
+            },
+            "expiresAtUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "companyId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "mobileUserId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "mobileDeviceId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "bootstrap": {
+              "$ref": "#/components/schemas/MobileBootstrapResponse"
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/auth/refresh",
+      "method": "post",
+      "summary": "Refreshes a mobile access token using a valid refresh token.",
+      "operationId": "MobileAuth_Refresh",
+      "tags": [
+        "MobileAuth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MobileApiRefreshRequest",
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MobileAuthTokenResponse",
+          "required": [
+            "accessToken",
+            "refreshToken",
+            "expiresAtUtc",
+            "companyId",
+            "mobileUserId",
+            "mobileDeviceId",
+            "bootstrap"
+          ],
+          "type": "object",
+          "properties": {
+            "accessToken": {
+              "type": "string"
+            },
+            "refreshToken": {
+              "type": "string"
+            },
+            "expiresAtUtc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "companyId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "mobileUserId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "mobileDeviceId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "bootstrap": {
+              "$ref": "#/components/schemas/MobileBootstrapResponse"
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/auth/logout",
+      "method": "post",
+      "summary": "Revokes the active mobile session refresh token.",
+      "operationId": "MobileAuth_Logout",
+      "tags": [
+        "MobileAuth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MobileApiLogoutRequest",
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "responses": {
+        "204": null,
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/auth/register-device",
+      "method": "post",
+      "summary": "Registers or updates the authenticated mobile device metadata.",
+      "operationId": "MobileAuth_RegisterDevice",
+      "tags": [
+        "MobileAuth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MobileDeviceRegisterRequest",
+        "required": [
+          "deviceId",
+          "platform",
+          "manufacturer",
+          "model",
+          "osVersion",
+          "appVersion",
+          "pushToken",
+          "ipAddress"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "osVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "appVersion": {
+            "type": "string"
+          },
+          "pushToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ipAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MobileDeviceResponse",
+          "required": [
+            "id",
+            "deviceId",
+            "platform",
+            "manufacturer",
+            "model",
+            "osVersion",
+            "appVersion",
+            "pushToken",
+            "status",
+            "lastLoginAtUtc",
+            "lastHeartbeatAtUtc",
+            "lastSyncAtUtc",
+            "lastIpAddress",
+            "isCurrentDevice"
+          ],
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "deviceId": {
+              "type": "string"
+            },
+            "platform": {
+              "type": "string"
+            },
+            "manufacturer": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "model": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "osVersion": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "appVersion": {
+              "type": "string"
+            },
+            "pushToken": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "$ref": "#/components/schemas/MobileDeviceStatus"
+            },
+            "lastLoginAtUtc": {
+              "type": [
+                "null",
+                "string"
+              ],
+              "format": "date-time"
+            },
+            "lastHeartbeatAtUtc": {
+              "type": [
+                "null",
+                "string"
+              ],
+              "format": "date-time"
+            },
+            "lastSyncAtUtc": {
+              "type": [
+                "null",
+                "string"
+              ],
+              "format": "date-time"
+            },
+            "lastIpAddress": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "isCurrentDevice": {
+              "type": "boolean"
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/auth/heartbeat",
+      "method": "post",
+      "summary": "Sends a heartbeat to keep the session active and validate license state.",
+      "operationId": "MobileAuth_Heartbeat",
+      "tags": [
+        "MobileAuth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MobileDeviceHeartbeatRequest",
+        "required": [
+          "deviceId",
+          "appVersion",
+          "lastSyncUtc",
+          "ipAddress"
+        ],
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "appVersion": {
+            "type": "string"
+          },
+          "lastSyncUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "ipAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MobileLicenseCheckResult",
+          "required": [
+            "licenseStatus",
+            "subscriptionStatus",
+            "planCode",
+            "expiryUtc",
+            "remainingDays",
+            "requiresForceUpdate",
+            "allowsAccess",
+            "offlineValidationDays",
+            "graceDays"
+          ],
+          "type": "object",
+          "properties": {
+            "licenseStatus": {
+              "$ref": "#/components/schemas/MobileLicenseStatus"
+            },
+            "subscriptionStatus": {
+              "$ref": "#/components/schemas/MobileSubscriptionStatus"
+            },
+            "planCode": {
+              "type": "string"
+            },
+            "expiryUtc": {
+              "type": [
+                "null",
+                "string"
+              ],
+              "format": "date-time"
+            },
+            "remainingDays": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "requiresForceUpdate": {
+              "type": "boolean"
+            },
+            "allowsAccess": {
+              "type": "boolean"
+            },
+            "offlineValidationDays": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "graceDays": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/auth/otp/request",
+      "method": "post",
+      "summary": "Requests OTP for mobile login fallback authentication.",
+      "operationId": "MobileAuth_RequestOtp",
+      "tags": [
+        "MobileAuth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MobileOtpRequest",
+        "required": [
+          "mobileOrEmail"
+        ],
+        "type": "object",
+        "properties": {
+          "mobileOrEmail": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MobileOtpStatusResponse",
+          "required": [
+            "enabled",
+            "message"
+          ],
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/auth/otp/verify",
+      "method": "post",
+      "summary": "Verifies OTP and confirms whether login can proceed.",
+      "operationId": "MobileAuth_VerifyOtp",
+      "tags": [
+        "MobileAuth"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MobileOtpVerifyRequest",
+        "required": [
+          "mobileOrEmail",
+          "otp"
+        ],
+        "type": "object",
+        "properties": {
+          "mobileOrEmail": {
+            "type": "string"
+          },
+          "otp": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MobileOtpStatusResponse",
+          "required": [
+            "enabled",
+            "message"
+          ],
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/v1/mobile/license/authorize-device/{requestedDeviceId}",
+      "method": "get",
+      "summary": "Checks whether the requested device is authorized for current subscription.",
+      "operationId": "MobileLicense_AuthorizeDevice",
+      "tags": [
+        "MobileLicense"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MobileDeviceAuthorizationResponse",
+          "required": [
+            "deviceId",
+            "authorized",
+            "reason"
+          ],
+          "type": "object",
+          "properties": {
+            "deviceId": {
+              "type": "string"
+            },
+            "authorized": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        },
+        "400": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "403": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "404": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "409": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "500": {
+          "$ref": "#/components/schemas/ProblemDetails",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "title": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "status": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "null",
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "detail": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "instance": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "requestedDeviceId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    }
+  ],
+  "products": [
+    {
+      "path": "/api/analytics/product-profit",
+      "method": "get",
+      "summary": "Get product profit analysis",
+      "operationId": "Analytics_GetProductProfit",
+      "tags": [
+        "Analytics"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ProductProfitDto",
+            "type": "object",
+            "properties": {
+              "productId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "productName": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "quantitySold": {
+                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "format": "int32"
+              },
+              "grossRevenue": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "cogs": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "wastageImpact": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "channelBreakdown": {
+                "type": "object",
+                "additionalProperties": {
+                  "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                  "type": [
+                    "number",
+                    "string"
+                  ],
+                  "format": "double"
+                }
+              },
+              "netProfit": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "netProfitPercent": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "effectiveMarginPercent": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "fromDate",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        {
+          "name": "toDate",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/analytics/top-products",
+      "method": "get",
+      "summary": "GET api/analytics/top-products",
+      "operationId": "Analytics_GetTopProducts",
+      "tags": [
+        "Analytics"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "fromDate",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        {
+          "name": "toDate",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32",
+            "default": 10
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/analytics/low-margin-products",
+      "method": "get",
+      "summary": "GET api/analytics/low-margin-products",
+      "operationId": "Analytics_GetLowMarginProducts",
+      "tags": [
+        "Analytics"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "fromDate",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        {
+          "name": "toDate",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32",
+            "default": 10
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/inventory/batches/by-product/{productId}",
+      "method": "get",
+      "summary": "GET api/inventory/batches/by-product/{productId}",
+      "operationId": "Inventory_GetBatchesByProduct",
+      "tags": [
+        "Inventory"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "productId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/inventory/ledger/{productId}",
+      "method": "get",
+      "summary": "GET api/inventory/ledger/{productId}",
+      "operationId": "Inventory_GetLedger",
+      "tags": [
+        "Inventory"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "productId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/inventory/products",
+      "method": "get",
+      "summary": "Returns all active products as inventory items for production/custom bouquet builder.\r\nFrontend calls GET /api/inventory/products.",
+      "operationId": "Inventory_GetProducts",
+      "tags": [
+        "Inventory"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/lookup/product-types",
+      "method": "get",
+      "summary": "GET api/lookup/product-types",
+      "operationId": "Lookup_GetProductTypes",
+      "tags": [
+        "Lookup"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/lookup/product-categories",
+      "method": "get",
+      "summary": "GET api/lookup/product-categories",
+      "operationId": "Lookup_GetProductCategories",
+      "tags": [
+        "Lookup"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/phone-orders/{id}/start-production",
+      "method": "post",
+      "summary": "POST api/phone-orders/{id}/start-production",
+      "operationId": "PhoneOrders_StartProduction",
+      "tags": [
+        "PhoneOrders"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production/recipes",
+      "method": "get",
+      "summary": "GET api/production/recipes",
+      "operationId": "Production_GetRecipes",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/FloralRecipeDto",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "tenantId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "category": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "sellingPrice": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "laborCost": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "null",
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "components": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RecipeComponentDto"
+                }
+              },
+              "sampleImages": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "isActive": {
+                "type": "boolean"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/recipes",
+      "method": "post",
+      "summary": "POST api/production/recipes",
+      "operationId": "Production_CreateRecipe",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/CreateRecipeRequest",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sellingPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "laborCost": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecipeComponentDto"
+            }
+          },
+          "sampleImages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/FloralRecipeDto",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "tenantId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "category": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "sellingPrice": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "laborCost": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "null",
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "components": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/RecipeComponentDto"
+              }
+            },
+            "sampleImages": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "isActive": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/recipes/{id}",
+      "method": "get",
+      "summary": "GET api/production/recipes/{id}",
+      "operationId": "Production_GetRecipe",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/FloralRecipeDto",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "tenantId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "category": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "sellingPrice": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "laborCost": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "null",
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "components": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/RecipeComponentDto"
+              }
+            },
+            "sampleImages": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "isActive": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production/recipes/{id}",
+      "method": "put",
+      "summary": "PUT api/production/recipes/{id}",
+      "operationId": "Production_UpdateRecipe",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/UpdateRecipeRequest",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sellingPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "laborCost": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecipeComponentDto"
+            }
+          },
+          "sampleImages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/FloralRecipeDto",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "tenantId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "category": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "sellingPrice": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "laborCost": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "null",
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "components": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/RecipeComponentDto"
+              }
+            },
+            "sampleImages": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "isActive": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production/recipes/{id}",
+      "method": "delete",
+      "summary": "DELETE api/production/recipes/{id}",
+      "operationId": "Production_DeleteRecipe",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production/finished-goods",
+      "method": "get",
+      "summary": "GET api/production/finished-goods",
+      "operationId": "Production_GetFinishedBatches",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/FinishedGoodsBatchDto",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "recipeId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "recipeName": {
+                "type": "string"
+              },
+              "batchCode": {
+                "type": "string"
+              },
+              "barcode": {
+                "type": "string"
+              },
+              "quantityProduced": {
+                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "format": "int32"
+              },
+              "quantityAvailable": {
+                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "format": "int32"
+              },
+              "expectedExpiry": {
+                "type": "string"
+              },
+              "locationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "locationName": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "producedAt": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/finished-batches",
+      "method": "get",
+      "summary": "GET api/production/finished-batches",
+      "operationId": "Production_GetFinishedBatches",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/FinishedGoodsBatchDto",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "recipeId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "recipeName": {
+                "type": "string"
+              },
+              "batchCode": {
+                "type": "string"
+              },
+              "barcode": {
+                "type": "string"
+              },
+              "quantityProduced": {
+                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "format": "int32"
+              },
+              "quantityAvailable": {
+                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "format": "int32"
+              },
+              "expectedExpiry": {
+                "type": "string"
+              },
+              "locationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "locationName": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "producedAt": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/finished-goods/sellable",
+      "method": "get",
+      "summary": "GET api/production/finished-goods/sellable",
+      "operationId": "Production_GetSellableFinishedGoods",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/SellableFinishedGoodDto",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "barcode": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "category": {
+                "type": "string"
+              },
+              "productType": {
+                "type": "string"
+              },
+              "retailPrice": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "costPrice": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "stockQuantity": {
+                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "format": "int32"
+              },
+              "isActive": {
+                "type": "boolean"
+              },
+              "isPerishable": {
+                "type": "boolean"
+              },
+              "recipeId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "recipeName": {
+                "type": "string"
+              },
+              "batchCode": {
+                "type": "string"
+              },
+              "locationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "locationName": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/finished-goods/{id}",
+      "method": "get",
+      "summary": "GET api/production/finished-goods/{id}",
+      "operationId": "Production_GetFinishedBatch",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/FinishedGoodsBatchDto",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "recipeId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "recipeName": {
+              "type": "string"
+            },
+            "batchCode": {
+              "type": "string"
+            },
+            "barcode": {
+              "type": "string"
+            },
+            "quantityProduced": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "quantityAvailable": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "expectedExpiry": {
+              "type": "string"
+            },
+            "locationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "locationName": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "producedAt": {
+              "type": "string"
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production/finished-goods/{id}/deduct",
+      "method": "post",
+      "summary": "POST api/production/finished-goods/{id}/deduct",
+      "operationId": "Production_DeductFromBatch",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/DeductBatchRequest",
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production/runs",
+      "method": "post",
+      "summary": "POST api/production/runs",
+      "operationId": "Production_CreateRun",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/ProductionRunRequest",
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "expectedExpiry": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/ProductionRunResult",
+          "type": "object",
+          "properties": {
+            "batchId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "batchCode": {
+              "type": "string"
+            },
+            "barcode": {
+              "type": "string"
+            },
+            "quantityProduced": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "componentsDeducted": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ComponentDeduction"
+              }
+            },
+            "totalCost": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/on-demand",
+      "method": "post",
+      "summary": "POST api/production/on-demand",
+      "operationId": "Production_OnDemand",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/OnDemandAssemblyRequest",
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/OnDemandAssemblyResult",
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean"
+            },
+            "componentsDeducted": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ComponentDeduction"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/custom/sell",
+      "method": "post",
+      "summary": "POST api/production/custom/sell",
+      "operationId": "Production_CustomSell",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/CustomBouquetRequest",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomBouquetComponent"
+            }
+          },
+          "sellingPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "laborCost": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "image": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/SellableFinishedGoodDto",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string"
+            },
+            "barcode": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "category": {
+              "type": "string"
+            },
+            "productType": {
+              "type": "string"
+            },
+            "retailPrice": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "costPrice": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "stockQuantity": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "isActive": {
+              "type": "boolean"
+            },
+            "isPerishable": {
+              "type": "boolean"
+            },
+            "recipeId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "recipeName": {
+              "type": "string"
+            },
+            "batchCode": {
+              "type": "string"
+            },
+            "locationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "locationName": {
+              "type": "string"
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/custom/save-recipe",
+      "method": "post",
+      "summary": "POST api/production/custom/save-recipe",
+      "operationId": "Production_SaveCustomRecipe",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/CustomBouquetSaveRequest",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomBouquetComponent"
+            }
+          },
+          "sellingPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "laborCost": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "image": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/FloralRecipeDto",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "tenantId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "category": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "sellingPrice": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "laborCost": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "null",
+                "number",
+                "string"
+              ],
+              "format": "double"
+            },
+            "components": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/RecipeComponentDto"
+              }
+            },
+            "sampleImages": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "isActive": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "updatedAt": {
+              "type": "string"
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/maintenance",
+      "method": "get",
+      "summary": "GET api/production/maintenance",
+      "operationId": "Production_GetMaintenanceLogs",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/MaintenanceLogDto",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "finishedBatchId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "batchCode": {
+                "type": "string"
+              },
+              "replacements": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MaintenanceReplacementDto"
+                }
+              },
+              "performedAt": {
+                "type": "string"
+              },
+              "performedBy": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "notes": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/maintenance",
+      "method": "post",
+      "summary": "POST api/production/maintenance",
+      "operationId": "Production_CreateMaintenance",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/MaintenanceRequest",
+        "type": "object",
+        "properties": {
+          "finishedBatchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "replacements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenanceReplacementDto"
+            }
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/MaintenanceLogDto",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "finishedBatchId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "batchCode": {
+              "type": "string"
+            },
+            "replacements": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/MaintenanceReplacementDto"
+              }
+            },
+            "performedAt": {
+              "type": "string"
+            },
+            "performedBy": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "notes": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/wastage",
+      "method": "get",
+      "summary": "GET api/production/wastage",
+      "operationId": "Production_GetWastageLogs",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/WastageLogDto",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "productId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "productName": {
+                "type": "string"
+              },
+              "quantity": {
+                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "format": "int32"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "relatedFinishedBatchId": {
+                "type": [
+                  "null",
+                  "string"
+                ],
+                "format": "uuid"
+              },
+              "relatedBatchCode": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "createdBy": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/wastage",
+      "method": "post",
+      "summary": "POST api/production/wastage",
+      "operationId": "Production_CreateWastage",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/CreateWastageRequest",
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "relatedFinishedBatchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "relatedBatchCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/WastageLogDto",
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "productId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "productName": {
+              "type": "string"
+            },
+            "quantity": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            },
+            "reason": {
+              "type": "string"
+            },
+            "relatedFinishedBatchId": {
+              "type": [
+                "null",
+                "string"
+              ],
+              "format": "uuid"
+            },
+            "relatedBatchCode": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "createdBy": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production/inventory-products",
+      "method": "get",
+      "summary": "GET api/production/inventory-products",
+      "operationId": "Production_GetInventoryProducts",
+      "tags": [
+        "Production"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/InventoryProductDto",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "productType": {
+                "type": "string"
+              },
+              "quantityAvailable": {
+                "pattern": "^-?(?:0|[1-9]\\d*)$",
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "format": "int32"
+              },
+              "unitCost": {
+                "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "format": "double"
+              },
+              "locationId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "locationId",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production-jobs",
+      "method": "get",
+      "summary": "GET /api/production-jobs?status=Pending",
+      "operationId": "ProductionJobs_Get",
+      "tags": [
+        "ProductionJobs"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ProductionJobDto",
+            "type": "object",
+            "properties": {
+              "jobId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "orderId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "orderNumber": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "createdAtUtc": {
+                "type": "string"
+              },
+              "materialUsages": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "$ref": "#/components/schemas/MaterialUsageDto"
+                }
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "status",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production-jobs",
+      "method": "post",
+      "summary": "POST /api/production-jobs",
+      "operationId": "ProductionJobs_Create",
+      "tags": [
+        "ProductionJobs"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/CreateProductionJobRequest",
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/ProductionJobDto",
+          "type": "object",
+          "properties": {
+            "jobId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "orderId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "orderNumber": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAtUtc": {
+              "type": "string"
+            },
+            "materialUsages": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "$ref": "#/components/schemas/MaterialUsageDto"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/production-jobs/{id}",
+      "method": "get",
+      "summary": "GET /api/production-jobs/{id}",
+      "operationId": "ProductionJobs_GetById",
+      "tags": [
+        "ProductionJobs"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/schemas/ProductionJobDto",
+          "type": "object",
+          "properties": {
+            "jobId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "orderId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "orderNumber": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAtUtc": {
+              "type": "string"
+            },
+            "materialUsages": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "$ref": "#/components/schemas/MaterialUsageDto"
+              }
+            }
+          }
+        },
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production-jobs/{id}/start",
+      "method": "post",
+      "summary": "POST /api/production-jobs/{id}/start",
+      "operationId": "ProductionJobs_Start",
+      "tags": [
+        "ProductionJobs"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production-jobs/{id}/complete",
+      "method": "post",
+      "summary": "POST /api/production-jobs/{id}/complete",
+      "operationId": "ProductionJobs_Complete",
+      "tags": [
+        "ProductionJobs"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/production-material-usage",
+      "method": "post",
+      "summary": "POST /api/production-material-usage",
+      "operationId": "ProductionMaterialUsage_Add",
+      "tags": [
+        "ProductionMaterialUsage"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/AddMaterialUsageRequest",
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitsUsed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/products/search",
+      "method": "get",
+      "summary": "GET api/products/search",
+      "operationId": "Products_Search",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "Query",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "ProductType",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "Category",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "IsActive",
+          "in": "query",
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "IsPerishable",
+          "in": "query",
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "LowStockOnly",
+          "in": "query",
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "Page",
+          "in": "query",
+          "schema": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        {
+          "name": "PageSize",
+          "in": "query",
+          "schema": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/products/{id}",
+      "method": "get",
+      "summary": "GET api/products/{id}",
+      "operationId": "Products_Get",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/products/{id}",
+      "method": "put",
+      "summary": "PUT api/products/{id}",
+      "operationId": "Products_Update",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/UpdateProductRequest",
+        "type": "object",
+        "properties": {
+          "productName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "barcode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "brand": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "retailPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "costPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "wholesalePrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "weddingEventPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "taxRuleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "taxCategory": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "trackInventory": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "trackBatch": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "reorderLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "shelfLifeDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "expiryAlertDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "temperatureNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isMultiUnit": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "avgUnitsPerStem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "flowerAttributes": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FlowerAttributesRequest"
+              }
+            ]
+          },
+          "supplier": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SupplierInfoRequest"
+              }
+            ]
+          },
+          "accounting": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AccountingInfoRequest"
+              }
+            ]
+          },
+          "settings": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductSettingsRequest"
+              }
+            ]
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/products/{id}",
+      "method": "delete",
+      "summary": "DELETE api/products/{id}",
+      "operationId": "Products_Delete",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "forceDeleteReferences",
+          "in": "query",
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/products",
+      "method": "post",
+      "summary": "POST api/products",
+      "operationId": "Products_Create",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/CreateProductRequest",
+        "type": "object",
+        "properties": {
+          "productName": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "barcode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "productType": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "brand": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "unitOfMeasure": {
+            "type": "string"
+          },
+          "retailPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "costPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "wholesalePrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "weddingEventPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "taxRuleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "taxCategory": {
+            "type": "string"
+          },
+          "trackInventory": {
+            "type": "boolean"
+          },
+          "trackBatch": {
+            "type": "boolean"
+          },
+          "openingStock": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reorderLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "shelfLifeDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "expiryAlertDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "temperatureNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isMultiUnit": {
+            "type": "boolean"
+          },
+          "avgUnitsPerStem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "flowerAttributes": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FlowerAttributesRequest"
+              }
+            ]
+          },
+          "supplier": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SupplierInfoRequest"
+              }
+            ]
+          },
+          "accounting": {
+            "$ref": "#/components/schemas/AccountingInfoRequest"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ProductSettingsRequest"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/products/validate-sku",
+      "method": "get",
+      "summary": "GET api/products/validate-sku",
+      "operationId": "Products_ValidateSku",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "sku",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "excludeProductId",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/products/{id}/deactivate",
+      "method": "put",
+      "summary": "PUT api/products/{id}/deactivate",
+      "operationId": "Products_Deactivate",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/products/{id}/activate",
+      "method": "put",
+      "summary": "PUT api/products/{id}/activate",
+      "operationId": "Products_Activate",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    },
+    {
+      "path": "/api/products/low-stock",
+      "method": "get",
+      "summary": "GET api/products/low-stock",
+      "operationId": "Products_GetLowStock",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    },
+    {
+      "path": "/api/products/reorder",
+      "method": "get",
+      "summary": "GET api/products/reorder",
+      "operationId": "Products_GetReorderProducts",
+      "tags": [
+        "Products"
+      ],
+      "requestSchema": null,
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": []
+    }
+  ],
+  "designGallery": [
+    {
+      "path": "/api/Orders/{id}/assign-designer",
+      "method": "post",
+      "summary": "POST api/Orders/{id}/assign-designer",
+      "operationId": "Orders_AssignDesigner",
+      "tags": [
+        "Orders"
+      ],
+      "requestSchema": {
+        "$ref": "#/components/schemas/AssignStaffRequest",
+        "type": "object",
+        "properties": {
+          "staffId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "responses": {
+        "200": null,
+        "400": null,
+        "401": null,
+        "403": null,
+        "404": null,
+        "409": null,
+        "500": null
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ]
+    }
+  ],
+  "schemas": {
+    "CreateCompanyRequest": {
+      "type": "object",
+      "properties": {
+        "name": "string",
+        "region": "string",
+        "email": "null,string?",
+        "phone": "null,string?",
+        "address": "null,string?",
+        "shortDescription": "null,string?",
+        "timeZone": "string",
+        "currencyCode": "string",
+        "taxIdentifier": "null,string?"
+      }
+    },
+    "CreateProductCategoryRequest": {
+      "type": "object",
+      "properties": {
+        "name": "string",
+        "isPerishable": "boolean",
+        "trackBatchByDefault": "boolean"
+      }
+    },
+    "CreateProductionJobRequest": {
+      "type": "object",
+      "properties": {
+        "orderId": "string:uuid",
+        "description": "string"
+      }
+    },
+    "CreateProductRequest": {
+      "type": "object",
+      "properties": {
+        "productName": "string",
+        "sku": "string",
+        "barcode": "null,string?",
+        "productType": "string",
+        "category": "null,string?",
+        "categoryId": "null,string:uuid?",
+        "brand": "null,string?",
+        "description": "null,string?",
+        "tags": "array<string>",
+        "unitOfMeasure": "string",
+        "retailPrice": "number,string:double",
+        "costPrice": "number,string:double",
+        "wholesalePrice": "null,number,string:double?",
+        "weddingEventPrice": "null,number,string:double?",
+        "taxRuleId": "null,string:uuid?",
+        "taxCategory": "string",
+        "trackInventory": "boolean",
+        "trackBatch": "boolean",
+        "openingStock": "null,integer,string:int32?",
+        "reorderLevel": "null,integer,string:int32?",
+        "shelfLifeDays": "null,integer,string:int32?",
+        "expiryAlertDays": "null,integer,string:int32?",
+        "temperatureNotes": "null,string?",
+        "isMultiUnit": "boolean",
+        "avgUnitsPerStem": "integer,string:int32",
+        "flowerAttributes": "any",
+        "supplier": "any",
+        "accounting": "#/components/schemas/AccountingInfoRequest",
+        "settings": "#/components/schemas/ProductSettingsRequest"
+      }
+    },
+    "EnableLoginRequest": {
+      "type": "object",
+      "properties": {
+        "loginIdentifier": "string",
+        "loginRole": "string",
+        "password": "string"
+      }
+    },
+    "GenerateTokenRequest": {
+      "type": "object",
+      "properties": {
+        "deliveryId": "string:uuid"
+      }
+    },
+    "InventoryProductDto": {
+      "type": "object",
+      "properties": {
+        "id": "string:uuid",
+        "name": "string",
+        "productType": "string",
+        "quantityAvailable": "integer,string:int32",
+        "unitCost": "number,string:double",
+        "locationId": "string:uuid"
+      }
+    },
+    "LoginRequest": {
+      "type": "object",
+      "required": [
+        "email",
+        "password"
+      ],
+      "properties": {
+        "email": "string",
+        "password": "string"
+      }
+    },
+    "MobileAdminCompanyScopedRequest": {
+      "type": "object",
+      "properties": {
+        "companyId": "string:uuid",
+        "notes": "null,string?"
+      }
+    },
+    "MobileApiLoginRequest": {
+      "type": "object",
+      "required": [
+        "companyId",
+        "identifier",
+        "password",
+        "deviceId",
+        "platform",
+        "manufacturer",
+        "model",
+        "osVersion",
+        "appVersion",
+        "pushToken",
+        "ipAddress"
+      ],
+      "properties": {
+        "companyId": "string:uuid",
+        "identifier": "string",
+        "password": "string",
+        "deviceId": "string",
+        "platform": "string",
+        "manufacturer": "null,string?",
+        "model": "null,string?",
+        "osVersion": "null,string?",
+        "appVersion": "string",
+        "pushToken": "null,string?",
+        "ipAddress": "null,string?"
+      }
+    },
+    "MobileAuthTokenResponse": {
+      "type": "object",
+      "required": [
+        "accessToken",
+        "refreshToken",
+        "expiresAtUtc",
+        "companyId",
+        "mobileUserId",
+        "mobileDeviceId",
+        "bootstrap"
+      ],
+      "properties": {
+        "accessToken": "string",
+        "refreshToken": "string",
+        "expiresAtUtc": "string:date-time",
+        "companyId": "string:uuid",
+        "mobileUserId": "string:uuid",
+        "mobileDeviceId": "string:uuid",
+        "bootstrap": "#/components/schemas/MobileBootstrapResponse"
+      }
+    },
+    "MobileBootstrapCompanyDto": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "currency",
+        "region",
+        "timeZone",
+        "taxIdentifier"
+      ],
+      "properties": {
+        "id": "string:uuid",
+        "name": "string",
+        "currency": "string",
+        "region": "string",
+        "timeZone": "string",
+        "taxIdentifier": "null,string?"
+      }
+    },
+    "MobileDeviceAuthorizationResponse": {
+      "type": "object",
+      "required": [
+        "deviceId",
+        "authorized",
+        "reason"
+      ],
+      "properties": {
+        "deviceId": "string",
+        "authorized": "boolean",
+        "reason": "string"
+      }
+    },
+    "MobileDevicePushTokenRequest": {
+      "type": "object",
+      "required": [
+        "pushToken",
+        "appVersion"
+      ],
+      "properties": {
+        "pushToken": "string",
+        "appVersion": "null,string?"
+      }
+    },
+    "ProductBarcodeInfo": {
+      "type": "object",
+      "properties": {
+        "productId": "string:uuid",
+        "productName": "string",
+        "sku": "string",
+        "unit": "string",
+        "unitPrice": "number,string:double",
+        "stockLevel": "integer,string:int32",
+        "externalBarcode": "null,string?",
+        "internalBarcode": "null,string?",
+        "foundByType": "string"
+      }
+    },
+    "ProductionJobDto": {
+      "type": "object",
+      "properties": {
+        "jobId": "string:uuid",
+        "orderId": "string:uuid",
+        "orderNumber": "null,string?",
+        "description": "string",
+        "status": "string",
+        "createdAtUtc": "string",
+        "materialUsages": "null,array?"
+      }
+    },
+    "ProductionRunRequest": {
+      "type": "object",
+      "properties": {
+        "recipeId": "string:uuid",
+        "quantity": "integer,string:int32",
+        "expectedExpiry": "string",
+        "locationId": "string:uuid"
+      }
+    },
+    "ProductionRunResult": {
+      "type": "object",
+      "properties": {
+        "batchId": "string:uuid",
+        "batchCode": "string",
+        "barcode": "string",
+        "quantityProduced": "integer,string:int32",
+        "componentsDeducted": "array<#/components/schemas/ComponentDeduction>",
+        "totalCost": "number,string:double"
+      }
+    },
+    "ProductProfitDto": {
+      "type": "object",
+      "properties": {
+        "productId": "string:uuid",
+        "productName": "string",
+        "sku": "string",
+        "category": "string",
+        "quantitySold": "integer,string:int32",
+        "grossRevenue": "number,string:double",
+        "cogs": "number,string:double",
+        "wastageImpact": "number,string:double",
+        "channelBreakdown": "object",
+        "netProfit": "number,string:double",
+        "netProfitPercent": "number,string:double",
+        "effectiveMarginPercent": "number,string:double"
+      }
+    },
+    "ProductSettingsRequest": {
+      "type": "object",
+      "properties": {
+        "status": "string",
+        "allowAsRawMaterial": "boolean",
+        "availableOnline": "boolean",
+        "commissionEligible": "boolean"
+      }
+    },
+    "UpdateCompanySettingsRequest": {
+      "type": "object",
+      "properties": {
+        "timeZone": "null,string?",
+        "currencyCode": "null,string?",
+        "taxIdentifier": "null,string?"
+      }
+    },
+    "UpdateProductCategoryRequest": {
+      "type": "object",
+      "properties": {
+        "name": "string",
+        "isPerishable": "boolean",
+        "trackBatchByDefault": "boolean"
+      }
+    },
+    "UpdateProductRequest": {
+      "type": "object",
+      "properties": {
+        "productName": "null,string?",
+        "categoryId": "null,string:uuid?",
+        "barcode": "null,string?",
+        "brand": "null,string?",
+        "description": "null,string?",
+        "tags": "null,array?",
+        "retailPrice": "null,number,string:double?",
+        "costPrice": "null,number,string:double?",
+        "wholesalePrice": "null,number,string:double?",
+        "weddingEventPrice": "null,number,string:double?",
+        "taxRuleId": "null,string:uuid?",
+        "taxCategory": "null,string?",
+        "trackInventory": "null,boolean?",
+        "trackBatch": "null,boolean?",
+        "reorderLevel": "null,integer,string:int32?",
+        "shelfLifeDays": "null,integer,string:int32?",
+        "expiryAlertDays": "null,integer,string:int32?",
+        "temperatureNotes": "null,string?",
+        "isMultiUnit": "null,boolean?",
+        "avgUnitsPerStem": "null,integer,string:int32?",
+        "flowerAttributes": "any",
+        "supplier": "any",
+        "accounting": "any",
+        "settings": "any"
+      }
+    }
+  }
+}

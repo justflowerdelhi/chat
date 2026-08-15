@@ -1,0 +1,499 @@
+import OpenAI from "openai";
+import type { QueryResultRow } from "pg";
+import { FLORIST_MITRA_PROMPT } from "@/lib/floristPrompt";
+import db from "@/lib/db";
+import type { ReceptionContext } from "@/lib/receptionContext";
+import { getDemoCatalogueRecommendations, type DemoCatalogueProduct } from "@/lib/demoCatalogue";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const DEMO_FLORIST_NAME = 'Just Flowers';
+const MONTHLY_LIMIT = 50;
+const HANDOFF_PHRASE = "I'll pass these details to our florist who will contact you shortly.";
+
+export interface ReceptionMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface DemoFloristRow extends QueryResultRow {
+  id: number;
+}
+
+interface ChatSessionRow extends QueryResultRow {
+  id: string;
+}
+
+interface ChatHistoryRow extends QueryResultRow {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface EnquirySummary {
+  customerName: string;
+  phone: string;
+  occasion: string;
+  budget: string;
+  deliveryDate: string;
+  deliveryCity: string;
+  recipient: string;
+  preferredFlowers: string;
+  recommendedProducts: string;
+  urgency: string;
+  specialInstructions: string;
+  missingInformation: string;
+  leadQuality: 'Low' | 'Medium' | 'High';
+  suggestedNextAction: string;
+  conversationConfidence: number;
+  priority: 'Low' | 'Medium' | 'High';
+  summaryText: string;
+}
+
+function textValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string').join(', ');
+  }
+
+  return typeof value === 'string' ? value : '';
+}
+
+function choiceValue(value: unknown): 'Low' | 'Medium' | 'High' {
+  return value === 'Low' || value === 'Medium' || value === 'High' ? value : 'Medium';
+}
+
+function confidenceValue(value: unknown): number {
+  return typeof value === 'number' && value >= 0 && value <= 100 ? Math.round(value) : 0;
+}
+
+function parseEnquirySummary(content: string | null): EnquirySummary | null {
+  if (!content) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    const leadQuality = choiceValue(parsed.leadQuality);
+
+    return {
+      customerName: textValue(parsed.customerName),
+      phone: textValue(parsed.phone),
+      occasion: textValue(parsed.occasion),
+      budget: textValue(parsed.budget),
+      deliveryDate: textValue(parsed.deliveryDate),
+      deliveryCity: textValue(parsed.deliveryCity),
+      recipient: textValue(parsed.recipient),
+      preferredFlowers: textValue(parsed.preferredFlowers),
+      recommendedProducts: textValue(parsed.recommendedProducts),
+      urgency: textValue(parsed.urgency),
+      specialInstructions: textValue(parsed.specialInstructions),
+      missingInformation: textValue(parsed.missingInformation),
+      leadQuality,
+      suggestedNextAction: textValue(parsed.suggestedNextAction),
+      conversationConfidence: confidenceValue(parsed.conversationConfidence),
+      priority: choiceValue(parsed.priority || leadQuality),
+      summaryText: textValue(parsed.summaryText),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isCompletedConversation(reply: string | null): boolean {
+  return reply?.toLowerCase().includes(HANDOFF_PHRASE.toLowerCase()) ?? false;
+}
+
+function isReceptionMessage(value: unknown): value is ReceptionMessage {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const message = value as Partial<ReceptionMessage>;
+  return (message.role === 'user' || message.role === 'assistant') && typeof message.content === 'string';
+}
+
+function normalizeMessages(messages: unknown): ReceptionMessage[] {
+  return Array.isArray(messages) ? messages.filter(isReceptionMessage) : [];
+}
+
+async function getDemoFloristId() {
+  const result = await db.query<DemoFloristRow>(
+    'SELECT id FROM members WHERE business_name = $1 ORDER BY id LIMIT 1',
+    [DEMO_FLORIST_NAME]
+  );
+
+  return result.rows[0]?.id ?? null;
+}
+
+async function checkUsageLimit(userId: number): Promise<{ allowed: boolean; remaining: number }> {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const result = await db.query(
+    'SELECT questions FROM member_usage WHERE user_id = $1 AND month = $2',
+    [userId, currentMonth]
+  );
+
+  if (result.rowCount === 0) {
+    await db.query(
+      'INSERT INTO member_usage (user_id, month, questions) VALUES ($1, $2, 0)',
+      [userId, currentMonth]
+    );
+    return { allowed: true, remaining: MONTHLY_LIMIT };
+  }
+
+  const currentUsage = result.rows[0].questions;
+  const remaining = MONTHLY_LIMIT - currentUsage;
+
+  return { allowed: remaining > 0, remaining };
+}
+
+async function incrementUsage(userId: number): Promise<void> {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  await db.query(
+    `UPDATE member_usage
+     SET questions = questions + 1, updated_at = NOW()
+     WHERE user_id = $1 AND month = $2`,
+    [userId, currentMonth]
+  );
+}
+
+async function createEnquiryIfCompleted(
+  conversationId: string,
+  historyMessages: ChatHistoryRow[],
+  reply: string | null
+) {
+  if (!isCompletedConversation(reply)) {
+    return;
+  }
+
+  try {
+    const summaryResponse = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `Extract one florist enquiry from the completed conversation.
+Return only valid JSON with these camelCase fields: customerName, phone, occasion, budget, deliveryDate, deliveryCity, recipient, preferredFlowers, recommendedProducts, urgency, specialInstructions, missingInformation, leadQuality, suggestedNextAction, conversationConfidence, priority, summaryText.
+Use only information present in the conversation. Leave unknown fields as empty strings.
+leadQuality and priority must be Low, Medium or High. conversationConfidence must be a number from 0 to 100.
+Do not create orders, confirm payment, confirm delivery or invent values.`,
+        },
+        ...historyMessages,
+        {
+          role: "assistant",
+          content: reply ?? '',
+        },
+      ],
+    });
+
+    const summary = parseEnquirySummary(summaryResponse.choices[0].message.content);
+    if (!summary) {
+      return;
+    }
+
+    await db.query(
+      `INSERT INTO enquiries (
+        conversation_id,
+        customer_name,
+        phone,
+        occasion,
+        budget,
+        delivery_date,
+        delivery_city,
+        recipient,
+        recommended_products,
+        special_instructions,
+        summary,
+        lead_quality,
+        conversation_confidence,
+        priority
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14)
+      ON CONFLICT (conversation_id) DO NOTHING`,
+      [
+        conversationId,
+        summary.customerName,
+        summary.phone,
+        summary.occasion,
+        summary.budget,
+        summary.deliveryDate,
+        summary.deliveryCity,
+        summary.recipient,
+        summary.recommendedProducts,
+        summary.specialInstructions,
+        JSON.stringify(summary),
+        summary.leadQuality,
+        summary.conversationConfidence,
+        summary.priority,
+      ]
+    );
+  } catch (error) {
+    console.error('Error creating enquiry:', error);
+  }
+}
+
+async function findSessionByTitle(userId: number, sessionTitle: string) {
+  const result = await db.query<ChatSessionRow>(
+    `SELECT id
+     FROM chat_sessions
+     WHERE user_id = $1 AND title = $2
+     ORDER BY updated_at DESC
+     LIMIT 1`,
+    [userId, sessionTitle]
+  );
+
+  return result.rows[0]?.id ?? null;
+}
+
+async function saveUserMessage(sessionId: string, messages: ReceptionMessage[]) {
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage && lastMessage.role === 'user') {
+    await db.query(
+      'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+      [sessionId, 'user', lastMessage.content]
+    );
+  }
+}
+
+
+interface KnownConversationDetails {
+  occasion: string;
+  budget: string;
+  deliveryCity: string;
+  deliveryDate: string;
+  recipient: string;
+  preferredFlowers: string;
+  midnightDelivery: string;
+}
+
+function extractKnownDetails(history: ChatHistoryRow[]): KnownConversationDetails {
+  const details: KnownConversationDetails = {
+    occasion: '',
+    budget: '',
+    deliveryCity: '',
+    deliveryDate: '',
+    recipient: '',
+    preferredFlowers: '',
+    midnightDelivery: '',
+  };
+
+  const clean = (value: string) => value.trim().replace(/^["']|["']$/g, '');
+  const userMessages = history.filter((m) => m.role === 'user');
+
+  for (let i = 0; i < history.length; i++) {
+    const msg = history[i];
+    if (msg.role !== 'assistant') continue;
+
+    const next = history[i + 1];
+    if (!next || next.role !== 'user') continue;
+
+    const assistant = msg.content.toLowerCase();
+    const answer = clean(next.content);
+    const lowerAnswer = answer.toLowerCase();
+
+    if (!details.deliveryCity && /(delivery city|which city|what city|city should we deliver|deliver to which city)/i.test(assistant)) {
+      if (answer && !/^(yes|no|okay|ok|sure|correct|tomorrow|today|yes please)$/i.test(answer)) {
+        details.deliveryCity = answer;
+      }
+    }
+
+    if (!details.deliveryDate && /(delivery date|which date|what date|date should|for tomorrow|is it for tomorrow)/i.test(assistant)) {
+      if (answer && !/^(yes|no|okay|ok|sure|correct)$/i.test(answer)) {
+        details.deliveryDate = answer;
+      } else if (/tomorrow/i.test(assistant) && /^(yes|correct|okay|ok)$/i.test(answer)) {
+        details.deliveryDate = 'Tomorrow';
+      }
+    }
+
+    if (!details.midnightDelivery && /(midnight delivery|midnight)/i.test(assistant)) {
+      if (/^(yes|yeah|yep|sure|okay|ok|yes please|go ahead)$/i.test(lowerAnswer)) {
+        details.midnightDelivery = 'Yes';
+      } else if (/^(no|no thanks|not needed)$/i.test(lowerAnswer)) {
+        details.midnightDelivery = 'No';
+      }
+    }
+  }
+
+  for (const msg of userMessages) {
+    const text = msg.content.trim();
+    const lower = text.toLowerCase();
+
+    if (!details.occasion) {
+      if (/\bbirthday\b|\bbday\b/.test(lower)) details.occasion = 'Birthday';
+      else if (/\banniversary\b/.test(lower)) details.occasion = 'Anniversary';
+      else if (/\bwedding\b/.test(lower)) details.occasion = 'Wedding';
+      else if (/\bcongrat/.test(lower)) details.occasion = 'Congratulations';
+      else if (/\bvalentine\b|\bromantic\b/.test(lower)) details.occasion = 'Romantic';
+    }
+
+    if (!details.budget) {
+      const budgetMatch = text.replace(/,/g, '').match(/(?:₹|rs\.?|inr)?\s*(\d{3,6})(?:\s*(?:rupees|rs|inr))?/i);
+      if (budgetMatch) details.budget = `₹${Number(budgetMatch[1]).toLocaleString('en-IN')}`;
+    }
+
+    if (!details.deliveryDate) {
+      if (/\btomorrow\b/i.test(text)) details.deliveryDate = 'Tomorrow';
+      else if (/\btoday\b/i.test(text)) details.deliveryDate = 'Today';
+      else if (/\bday after tomorrow\b/i.test(text)) details.deliveryDate = 'Day after tomorrow';
+    }
+
+    if (!details.deliveryCity) {
+      const cityMatch = text.match(/\b(New Delhi|Delhi|Mumbai|Bombay|Bengaluru|Bangalore|Kolkata|Calcutta|Chennai|Hyderabad|Pune|Ahmedabad|Jaipur|Lucknow|Gurugram|Gurgaon|Noida|Ghaziabad|Chandigarh|Nagpur)\b/i);
+      if (cityMatch) {
+        const raw = cityMatch[1];
+        details.deliveryCity = /^(new delhi)$/i.test(raw) ? 'New Delhi' : raw;
+      }
+    }
+
+    if (!details.preferredFlowers) {
+      const flowerMatch = text.match(/\b(roses?|lil(?:y|ies)|orchids?|tulips?|gerberas?|carnations?|sunflowers?|mixed flowers?)\b/i);
+      if (flowerMatch) details.preferredFlowers = flowerMatch[1];
+    }
+  }
+
+  return details;
+}
+
+function buildStateInstruction(details: KnownConversationDetails): string {
+  const rows = [
+    ['Occasion', details.occasion],
+    ['Budget', details.budget],
+    ['Delivery City', details.deliveryCity],
+    ['Delivery Date', details.deliveryDate],
+    ['Recipient', details.recipient],
+    ['Preferred Flowers', details.preferredFlowers],
+    ['Midnight Delivery', details.midnightDelivery],
+  ].filter(([, value]) => value);
+
+  if (rows.length === 0) return '';
+
+  return [
+    'CURRENT CUSTOMER STATE — AUTHORITATIVE CONVERSATION MEMORY:',
+    ...rows.map(([label, value]) => `- ${label}: ${value}`),
+    '',
+    'IMPORTANT STATE RULES:',
+    '- These details have already been provided or confirmed by the customer.',
+    '- NEVER ask the customer for any detail listed above again.',
+    '- Treat a short answer such as "New Delhi", "Delhi", "Tomorrow", or "Yes" as the answer to the immediately preceding question when the conversation context makes that clear.',
+    '- If the customer confirms a detail, retain the original detail; do not reset it.',
+    '- Ask only for the next genuinely missing detail.',
+    '- Do not restart the requirement-gathering process on every message.',
+  ].join('\n');
+}
+
+export async function runReceptionConversation({
+  messages,
+  sessionId,
+  sessionTitle,
+  context,
+}: {
+  messages: unknown;
+  sessionId?: string | null;
+  sessionTitle?: string;
+  context?: ReceptionContext;
+}) {
+  // Use context memberId if provided, otherwise fall back to demo florist
+  const userId = context?.memberId || await getDemoFloristId();
+
+  if (!userId) {
+    return { error: 'Florist not configured', status: 500 as const };
+  }
+
+  const normalizedMessages = normalizeMessages(messages);
+  if (normalizedMessages.length === 0) {
+    return { error: 'Invalid messages format', status: 400 as const };
+  }
+
+  const usageCheck = await checkUsageLimit(userId);
+  if (!usageCheck.allowed) {
+    return {
+      error: 'Monthly limit reached. Please try again next month.',
+      status: 429 as const,
+      remaining: 0,
+    };
+  }
+
+  let currentSessionId = sessionId || null;
+
+  if (!currentSessionId && sessionTitle) {
+    currentSessionId = await findSessionByTitle(userId, sessionTitle);
+  }
+
+  if (currentSessionId) {
+    const sessionCheck = await db.query(
+      'SELECT id FROM chat_sessions WHERE id = $1 AND user_id = $2',
+      [currentSessionId, userId]
+    );
+
+    if (sessionCheck.rowCount === 0) {
+      return { error: 'Invalid session', status: 400 as const };
+    }
+
+    await saveUserMessage(currentSessionId, normalizedMessages);
+  } else {
+    const sessionResult = await db.query<ChatSessionRow>(
+      'INSERT INTO chat_sessions (user_id, title) VALUES ($1, $2) RETURNING id',
+      [userId, sessionTitle || normalizedMessages[0]?.content?.substring(0, 50) || 'Website Enquiry']
+    );
+    currentSessionId = sessionResult.rows[0].id;
+    await saveUserMessage(currentSessionId, normalizedMessages);
+  }
+
+  const historyResult = await db.query<ChatHistoryRow>(
+    `SELECT role, content
+     FROM chat_messages
+     WHERE session_id = $1
+     ORDER BY created_at DESC
+     LIMIT 30`,
+    [currentSessionId]
+  );
+
+  const chronologicalHistory = [...historyResult.rows].reverse();
+
+  const historyMessages = chronologicalHistory.map((msg: ChatHistoryRow) => ({
+    role: msg.role,
+    content: msg.content,
+  }));
+
+  const knownDetails = extractKnownDetails(chronologicalHistory);
+  const stateInstruction = buildStateInstruction(knownDetails);
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: stateInstruction
+          ? `${FLORIST_MITRA_PROMPT}\n\n${stateInstruction}`
+          : FLORIST_MITRA_PROMPT,
+      },
+      ...historyMessages,
+    ],
+  });
+
+  const reply = response.choices[0].message.content;
+
+  await db.query(
+    'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+    [currentSessionId, 'assistant', reply]
+  );
+
+  await db.query(
+    'UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1',
+    [currentSessionId]
+  );
+
+  await incrementUsage(userId);
+  await createEnquiryIfCompleted(currentSessionId, historyMessages, reply);
+
+  const lastUserMessage = normalizedMessages[normalizedMessages.length - 1]?.content || '';
+  const catalogProducts = getDemoCatalogueRecommendations(lastUserMessage);
+
+  return {
+    reply,
+    catalogProducts,
+    sessionId: currentSessionId,
+    remaining: usageCheck.remaining - 1,
+    status: 200 as const,
+  };
+}
