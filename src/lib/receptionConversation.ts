@@ -26,7 +26,7 @@ interface ChatSessionRow extends QueryResultRow {
   id: string;
 }
 
-interface ChatHistoryRow extends QueryResultRow {
+export interface ChatHistoryRow extends QueryResultRow {
   role: 'user' | 'assistant';
   content: string;
 }
@@ -388,7 +388,7 @@ async function saveUserMessage(sessionId: string, messages: ReceptionMessage[]) 
 }
 
 
-interface KnownConversationDetails {
+export interface KnownConversationDetails {
   occasion: string;
   budget: string;
   deliveryCity: string;
@@ -398,7 +398,7 @@ interface KnownConversationDetails {
   midnightDelivery: string;
 }
 
-function extractKnownDetails(history: ChatHistoryRow[]): KnownConversationDetails {
+export function extractKnownDetails(history: ChatHistoryRow[]): KnownConversationDetails {
   const details: KnownConversationDetails = {
     occasion: '',
     budget: '',
@@ -598,6 +598,7 @@ export async function runReceptionConversation({
   const smartSalesInstruction = `
 SMART SALES RULES:
 - Behave like an experienced human florist salesperson, not a questionnaire.
+- If the customer has only greeted or is vague (e.g., "Hello", "Hi", "Hii", "Good morning", "Good evening", "Namaste", "I need help", "I want to order"), reply with a short greeting or one clarifying question such as "Hello! 😊 How can I help you today?" or "Sure 😊 Kya chahiye aapko?". Do NOT assume flowers, roses, cake, or any product, and do NOT ask for budget, occasion, date, city, recipient, or flower type until they indicate what they want.
 - Remember the conversation. Understand references such as "first one", "second one", "the cheaper one", "that bouquet", "same one", "this one", "add chocolate", and "remove the cake" from the recent conversation.
 - Never ask again for information that is already known from the conversation.
 - If the customer gives a budget, stay within it whenever possible and recommend the best matching option first.

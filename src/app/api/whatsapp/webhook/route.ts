@@ -6,6 +6,37 @@ import type { ReceptionContext } from "@/lib/receptionContext";
 import db from "@/lib/db";
 import { DEMO_CATALOGUE, type DemoCatalogueProduct } from "@/lib/demoCatalogue";
 import { getJustFlowerCatalogueRecommendations } from "@/lib/justflowerCatalogue";
+import {
+  findFloristByNameOrNearest,
+  formatFloristContact,
+  formatFloristList,
+  getNearestFlorists,
+} from "@/lib/floritribeLocator";
+import {
+  buildMissingLocationMessage,
+  detectContactDetailsRequest,
+  detectNearestFloristIntent,
+  extractLocationFromMessage,
+  hasLocationInformation,
+  isAffirmativeReply,
+} from "@/lib/locationIntent";
+import {
+  clearLocatorState,
+  getLocatorState,
+  saveLocatorState,
+} from "@/lib/locatorSession";
+import type { LocatorSessionState } from "@/lib/locatorSession";
+import { runIFAConversation } from "@/lib/ifaConversation";
+import {
+  dispatchWhatsAppChannel,
+  resolveIfaSender,
+  resolveWhatsAppChannel,
+} from "@/lib/whatsappChannel";
+import type {
+  IfaChannelContext,
+  WhatsAppAccount,
+  WhatsAppSender,
+} from "@/lib/whatsappChannel";
 
 interface WhatsAppTextMessage {
   from: string;
@@ -32,16 +63,6 @@ interface WhatsAppWebhookPayload {
   entry?: Array<{
     changes?: Array<{ value?: WhatsAppChangeValue }>;
   }>;
-}
-
-interface WhatsAppAccount {
-  memberId: number;
-  businessName: string;
-  phoneNumberId: string;
-  accessToken: string;
-  verifyToken: string;
-  notificationPhoneNumber: string | null;
-  isActive: boolean;
 }
 
 export async function GET(req: Request) {
@@ -90,7 +111,7 @@ async function resolveWhatsAppAccount(phoneNumberId: string): Promise<WhatsAppAc
   }
 }
 
-async function sendWhatsAppText(to: string, message: string, account: WhatsAppAccount) {
+async function sendWhatsAppText(to: string, message: string, account: WhatsAppSender) {
   const response = await fetch(
     `https://graph.facebook.com/v26.0/${account.phoneNumberId}/messages`,
     {
@@ -193,6 +214,59 @@ async function sendWhatsAppImage(
   }
 }
 
+async function getOrCreateWhatsAppSession(
+  customerPhone: string,
+  userId: number
+): Promise<string> {
+  const sessionTitle = `WhatsApp ${customerPhone}`;
+
+  const existingSession = await db.query<{ id: string }>(
+    `SELECT id
+     FROM chat_sessions
+     WHERE user_id = $1
+       AND title = $2
+     ORDER BY updated_at DESC
+     LIMIT 1`,
+    [userId, sessionTitle]
+  );
+
+  if (existingSession.rows.length > 0) {
+    return existingSession.rows[0].id;
+  }
+
+  const newSession = await db.query<{ id: string }>(
+    'INSERT INTO chat_sessions (user_id, title) VALUES ($1, $2) RETURNING id',
+    [userId, sessionTitle]
+  );
+
+  return newSession.rows[0].id;
+}
+
+async function saveLocatorReplyAndSend(
+  sessionId: string,
+  customerPhone: string,
+  incomingText: string,
+  reply: string,
+  account: WhatsAppAccount
+) {
+  await db.query(
+    'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+    [sessionId, 'user', incomingText]
+  );
+
+  await db.query(
+    'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+    [sessionId, 'assistant', reply]
+  );
+
+  await db.query(
+    'UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1',
+    [sessionId]
+  );
+
+  await sendWhatsAppText(customerPhone, reply, account);
+}
+
 /**
  * Deterministic demo catalogue trigger.
  *
@@ -265,7 +339,7 @@ async function getDirectCatalogueMatches(message: string): Promise<DemoCatalogue
 }
 async function transcribeWhatsAppAudio(
   mediaId: string,
-  account: WhatsAppAccount,
+  account: WhatsAppSender,
   mimeType?: string
 ): Promise<string> {
   const mediaResponse = await fetch(
@@ -345,62 +419,62 @@ async function transcribeWhatsAppAudio(
 
   return result.text.trim();
 }
-async function handleMessage(message: WhatsAppTextMessage, phoneNumberId: string) {
-  if (
-    message.type !== "text" &&
-    message.type !== "audio"
-  ) {
-    console.log("Ignoring unsupported WhatsApp message type:", message.type);
-    return;
-  }
-
-  const account = await resolveWhatsAppAccount(phoneNumberId);
-
-  if (!account) {
-    console.error("Unknown or inactive WhatsApp Phone Number ID:", phoneNumberId);
-    return;
-  }
-
-  let incomingText = "";
-
+/**
+ * Extract the text the customer sent. Voice notes are transcribed; on failure
+ * a fallback reply is sent and "" is returned so the caller can stop.
+ */
+async function extractIncomingText(
+  message: WhatsAppTextMessage,
+  sender: WhatsAppSender
+): Promise<string> {
   if (message.type === "text") {
-    incomingText = message.text?.body?.trim() || "";
-  } else {
-    const mediaId = message.audio?.id;
-
-    if (!mediaId) {
-      console.error("WhatsApp audio message has no media ID:", message.id);
-      await sendWhatsAppText(
-        message.from,
-        "Sorry, I couldn't read that voice message. Please send it again or type your request.",
-        account
-      );
-      return;
-    }
-
-    try {
-      incomingText = await transcribeWhatsAppAudio(
-        mediaId,
-        account,
-        message.audio?.mime_type
-      );
-
-      console.log("WhatsApp voice transcription:", {
-        from: message.from,
-        id: message.id,
-        transcript: incomingText,
-      });
-    } catch (error) {
-      console.error("WhatsApp voice transcription failed:", error);
-
-      await sendWhatsAppText(
-        message.from,
-        "Sorry, I couldn't understand that voice message. Please try again or type your request.",
-        account
-      );
-      return;
-    }
+    return message.text?.body?.trim() || "";
   }
+
+  const mediaId = message.audio?.id;
+
+  if (!mediaId) {
+    console.error("WhatsApp audio message has no media ID:", message.id);
+    await sendWhatsAppText(
+      message.from,
+      "Sorry, I couldn't read that voice message. Please send it again or type your request.",
+      sender
+    );
+    return "";
+  }
+
+  try {
+    const transcript = await transcribeWhatsAppAudio(
+      mediaId,
+      sender,
+      message.audio?.mime_type
+    );
+
+    console.log("WhatsApp voice transcription:", {
+      from: message.from,
+      id: message.id,
+      transcript,
+    });
+
+    return transcript;
+  } catch (error) {
+    console.error("WhatsApp voice transcription failed:", error);
+
+    await sendWhatsAppText(
+      message.from,
+      "Sorry, I couldn't understand that voice message. Please try again or type your request.",
+      sender
+    );
+    return "";
+  }
+}
+
+async function handleFloristMessage(
+  message: WhatsAppTextMessage,
+  account: WhatsAppAccount
+) {
+  const phoneNumberId = account.phoneNumberId;
+  const incomingText = await extractIncomingText(message, account);
 
   if (!incomingText) return;
 
@@ -411,6 +485,211 @@ async function handleMessage(message: WhatsAppTextMessage, phoneNumberId: string
     phoneNumberId,
   });
 
+  const sessionId = await getOrCreateWhatsAppSession(
+    message.from,
+    account.memberId
+  );
+  const rawLocatorState = await getLocatorState(sessionId);
+  let locatorState: LocatorSessionState = rawLocatorState || {};
+
+  const isLocatorIntent = detectNearestFloristIntent(incomingText);
+  const isAffirmativeContactReply =
+    isAffirmativeReply(incomingText) &&
+    locatorState.lastResult &&
+    (locatorState.lastResult.prompt === 'contact-offer' ||
+      !locatorState.lastResult.prompt);
+  const isContactRequest =
+    detectContactDetailsRequest(incomingText) || isAffirmativeContactReply;
+  const locationUpdate = extractLocationFromMessage(incomingText);
+
+  // Contact details follow-up for a recent locator result
+  if (isContactRequest && locatorState.lastResult) {
+    const florist = findFloristByNameOrNearest(
+      locatorState.lastResult.florists,
+      isAffirmativeContactReply ? undefined : incomingText
+    );
+
+    if (florist) {
+      const reply = formatFloristContact(florist);
+      await saveLocatorReplyAndSend(
+        sessionId,
+        message.from,
+        incomingText,
+        reply,
+        account
+      );
+      await saveLocatorState(sessionId, {
+        ...locatorState,
+        pending: false,
+        lastResult: {
+          ...locatorState.lastResult,
+          prompt: 'contact-details',
+        },
+      });
+    } else {
+      const reply =
+        "Sorry, I don't have florist contact details to share right now.";
+      await saveLocatorReplyAndSend(
+        sessionId,
+        message.from,
+        incomingText,
+        reply,
+        account
+      );
+      await clearLocatorState(sessionId);
+      locatorState = {};
+    }
+
+    return;
+  }
+
+  if (isLocatorIntent || locatorState.pending) {
+    if (isLocatorIntent) {
+      // A fresh locator request should not inherit stale partial location.
+      // Preserve lastResult only until the next successful lookup replaces it.
+      locatorState = { lastResult: locatorState.lastResult };
+    }
+
+    if (
+      locatorState.pending &&
+      !isLocatorIntent &&
+      !isContactRequest &&
+      !hasLocationInformation(incomingText)
+    ) {
+      // Customer did not provide location and is not asking for contacts.
+      // Reset locator state and fall through to the normal flow.
+      await clearLocatorState(sessionId);
+      locatorState = {};
+    } else {
+      const city = locationUpdate.city || locatorState.collectedCity;
+      const pincode = locationUpdate.pincode || locatorState.collectedPincode;
+
+      if (city && pincode) {
+        try {
+          const florists = await getNearestFlorists({
+            city,
+            pincode,
+            limit: 3,
+          });
+
+          if (florists.length === 0) {
+            // No florists for this location: tell the customer and keep the
+            // session pending so they can try another PIN code or city.
+            const reply = formatFloristList(florists, city, pincode);
+            await saveLocatorReplyAndSend(
+              sessionId,
+              message.from,
+              incomingText,
+              reply,
+              account
+            );
+            await saveLocatorState(sessionId, {
+              ...locatorState,
+              pending: true,
+              collectedCity: city,
+              collectedPincode: undefined,
+            });
+            return;
+          }
+
+          const reply = formatFloristList(florists, city, pincode);
+          await saveLocatorReplyAndSend(
+            sessionId,
+            message.from,
+            incomingText,
+            reply,
+            account
+          );
+
+          await saveLocatorState(sessionId, {
+            pending: false,
+            lastResult: {
+              city,
+              pincode,
+              fetchedAt: new Date().toISOString(),
+              florists,
+              prompt: 'contact-offer',
+            },
+          });
+
+          return;
+        } catch (error) {
+          console.error("Floritribe locator error:", error);
+          const fallbackReply =
+            "Sorry, I'm unable to check the nearest florists right now. Please try again in a little while.";
+          await saveLocatorReplyAndSend(
+            sessionId,
+            message.from,
+            incomingText,
+            fallbackReply,
+            account
+          );
+          // Keep the session pending with the attempted location so the
+          // customer can retry with a new PIN code or city.
+          await saveLocatorState(sessionId, {
+            ...locatorState,
+            pending: true,
+            collectedCity: city,
+            collectedPincode: pincode,
+          });
+          return;
+        }
+      }
+
+      if (pincode && !city) {
+        const reply = "Thanks 😊 Which city is this PIN code in?";
+        await saveLocatorReplyAndSend(
+          sessionId,
+          message.from,
+          incomingText,
+          reply,
+          account
+        );
+        await saveLocatorState(sessionId, {
+          ...locatorState,
+          pending: true,
+          collectedPincode: pincode,
+        });
+        return;
+      }
+
+      if (city && !pincode) {
+        const reply =
+          "Sure 😊 Please share the PIN code so I can find the nearest IFA florists.";
+        await saveLocatorReplyAndSend(
+          sessionId,
+          message.from,
+          incomingText,
+          reply,
+          account
+        );
+        await saveLocatorState(sessionId, {
+          ...locatorState,
+          pending: true,
+          collectedCity: city,
+        });
+        return;
+      }
+
+      // No usable location information yet
+      const reply = buildMissingLocationMessage({});
+      await saveLocatorReplyAndSend(
+        sessionId,
+        message.from,
+        incomingText,
+        reply,
+        account
+      );
+      await saveLocatorState(sessionId, {
+        ...locatorState,
+        pending: true,
+      });
+      return;
+    }
+  }
+
+  // Normal flow: ensure no stale locator state interferes
+  await clearLocatorState(sessionId);
 
   const context: ReceptionContext = {
     memberId: account.memberId,
@@ -509,6 +788,70 @@ async function handleMessage(message: WhatsAppTextMessage, phoneNumberId: string
       directCatalogueProducts.length === 0 ? aiCatalogueProducts.length : 0,
     phoneNumberId: account.phoneNumberId,
     memberId: account.memberId,
+  });
+}
+
+async function handleIfaMessage(
+  message: WhatsAppTextMessage,
+  channel: IfaChannelContext
+) {
+  const sender = await resolveIfaSender(resolveWhatsAppAccount);
+
+  if (!sender) {
+    console.error(
+      "IFA WhatsApp sender is not configured. Set IFA_WHATSAPP_PHONE_NUMBER_ID and a WABA access token (WHATSAPP_ACCESS_TOKEN or IFA_WHATSAPP_ACCESS_TOKEN).",
+      { phoneNumberId: channel.phoneNumberId }
+    );
+    return;
+  }
+
+  const incomingText = await extractIncomingText(message, sender);
+  if (!incomingText) return;
+
+  console.log("IFA WhatsApp incoming message:", {
+    from: message.from,
+    id: message.id,
+    text: incomingText,
+    phoneNumberId: channel.phoneNumberId,
+  });
+
+  const result = await runIFAConversation({
+    messages: [{ role: "user", content: incomingText }],
+    context: channel,
+  });
+
+  await sendWhatsAppText(message.from, result.reply, sender);
+
+  console.log("IFA WhatsApp outgoing reply:", {
+    to: message.from,
+    reply: result.reply,
+    phoneNumberId: channel.phoneNumberId,
+  });
+}
+
+async function handleMessage(message: WhatsAppTextMessage, phoneNumberId: string) {
+  if (message.type !== "text" && message.type !== "audio") {
+    console.log("Ignoring unsupported WhatsApp message type:", message.type);
+    return;
+  }
+
+  const channel = await resolveWhatsAppChannel(
+    phoneNumberId,
+    resolveWhatsAppAccount
+  );
+
+  await dispatchWhatsAppChannel(channel, {
+    florist: (floristChannel) =>
+      handleFloristMessage(message, floristChannel.account),
+    ifa: (ifaChannel) => handleIfaMessage(message, ifaChannel),
+    unknown: (unknownChannel) => {
+      // Never fall back to Just Flowers or another business. Log and return so
+      // Meta still gets HTTP 200 and does not keep retrying the webhook.
+      console.error(
+        "Unknown WhatsApp Phone Number ID (no channel resolved):",
+        unknownChannel.phoneNumberId
+      );
+    },
   });
 }
 
