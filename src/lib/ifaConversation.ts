@@ -1,6 +1,8 @@
 import { getOpenAI } from '@/lib/openaiClient';
 import { IFA_ASSISTANT_PROMPT } from '@/lib/ifaPrompt';
+import { resolveIfaKnowledge, getMemberContact } from '@/lib/ifa/knowledge';
 import type { IfaChannelContext } from '@/lib/whatsappChannel';
+import type { IfaMember } from '@/lib/ifa/types';
 
 export interface IfaMessage {
   role: 'user' | 'assistant';
@@ -20,30 +22,42 @@ const IFA_FALLBACK_REPLY =
   "Sorry, I'm having trouble answering right now. Please try again in a little while.";
 
 /**
- * IFA knowledge/data layer.
- *
- * Deliberately kept separate from the conversation logic so the real IFA
- * website, database or documents can be connected later without touching the
- * assistant. Until a source is wired in it returns an empty string, which
- * makes the assistant honestly say it does not have the detail yet instead of
- * inventing IFA facts.
+ * Build the IFA knowledge context for the LLM.
+ * Organizes knowledge by category and includes recent member results for follow-ups.
  */
-export async function getIfaKnowledgeContext(): Promise<string> {
-  // TODO: connect the real IFA knowledge source (website / DB / documents).
-  return '';
-}
+async function buildIfaKnowledgeContext(
+  messages: IfaMessage[],
+  recentMembers: IfaMember[]
+): Promise<string> {
+  const lastUserMessage = messages[messages.length - 1]?.content || '';
 
-function buildIfaSystemPrompt(
-  context: IfaChannelContext,
-  knowledge: string
-): string {
-  const knowledgeBlock = knowledge.trim()
-    ? knowledge.trim()
-    : 'No IFA knowledge source is connected yet. If you do not have a detail, say so and offer to connect the person with the IFA team.';
+  // Resolve knowledge for the current query
+  const knowledge = await resolveIfaKnowledge({ text: lastUserMessage });
 
-  return IFA_ASSISTANT_PROMPT.replace('{BUSINESS_NAME}', context.businessName)
-    .replace('{TIMEZONE}', context.timezone)
-    .replace('{IFA_KNOWLEDGE}', knowledgeBlock);
+  // Check for follow-up contact queries (phone, address, etc.)
+  const lower = lastUserMessage.toLowerCase();
+  const isContactFollowUp =
+    (lower.includes('phone') ||
+      lower.includes('address') ||
+      lower.includes('contact') ||
+      lower.includes('number')) &&
+    recentMembers.length > 0;
+
+  let contactSection = '';
+  if (isContactFollowUp) {
+    // Assume follow-up refers to the most recent member
+    const member = recentMembers[0];
+    contactSection = `\n\nRECENT MEMBER CONTACT:\n${member.businessName}\n${member.address ? `Address: ${member.address}` : ''}\n${member.phone ? `Phone: ${member.phone}` : ''}`;
+  }
+
+  // Organize by category
+  const sections: string[] = [];
+  sections.push(`CATEGORY: ${knowledge.category.toUpperCase()}`);
+  sections.push(`SOURCE: ${knowledge.source}`);
+  sections.push(knowledge.text);
+  if (contactSection) sections.push(contactSection);
+
+  return sections.join('\n\n');
 }
 
 /**
@@ -56,8 +70,20 @@ export async function runIFAConversation(
   const { messages, context } = input;
 
   try {
-    const knowledge = await getIfaKnowledgeContext();
-    const systemPrompt = buildIfaSystemPrompt(context, knowledge);
+    // Extract recent member results from conversation history (simple heuristic)
+    const recentMembers: IfaMember[] = [];
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.content.includes('IFA members')) {
+        // This is a simplified extraction; in production, parse structured results
+        // For now, we rely on the knowledge layer to provide context
+      }
+    }
+
+    const knowledge = await buildIfaKnowledgeContext(messages, recentMembers);
+
+    const systemPrompt = IFA_ASSISTANT_PROMPT.replace('{BUSINESS_NAME}', context.businessName)
+      .replace('{TIMEZONE}', context.timezone)
+      .replace('{IFA_KNOWLEDGE}', knowledge);
 
     const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini',
