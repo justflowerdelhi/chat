@@ -3,6 +3,10 @@ import { IFA_ASSISTANT_PROMPT } from '@/lib/ifaPrompt';
 import { resolveIfaKnowledge, getMemberContact } from '@/lib/ifa/knowledge';
 import type { IfaChannelContext } from '@/lib/whatsappChannel';
 import type { IfaMember } from '@/lib/ifa/types';
+import {
+  getRecentMemberResult,
+  saveMemberSearchResult,
+} from '@/lib/ifaSession';
 
 export interface IfaMessage {
   role: 'user' | 'assistant';
@@ -16,6 +20,7 @@ export interface IfaConversationResult {
 export interface RunIfaConversationInput {
   messages: IfaMessage[];
   context: IfaChannelContext;
+  sessionId?: string;
 }
 
 const IFA_FALLBACK_REPLY =
@@ -27,12 +32,9 @@ const IFA_FALLBACK_REPLY =
  */
 async function buildIfaKnowledgeContext(
   messages: IfaMessage[],
-  recentMembers: IfaMember[]
-): Promise<string> {
+  sessionId?: string
+): Promise<{ knowledge: string; membersToSave?: IfaMember[]; searchType?: string; searchQuery?: string }> {
   const lastUserMessage = messages[messages.length - 1]?.content || '';
-
-  // Resolve knowledge for the current query
-  const knowledge = await resolveIfaKnowledge({ text: lastUserMessage });
 
   // Check for follow-up contact queries (phone, address, etc.)
   const lower = lastUserMessage.toLowerCase();
@@ -41,13 +43,34 @@ async function buildIfaKnowledgeContext(
       lower.includes('address') ||
       lower.includes('contact') ||
       lower.includes('number')) &&
-    recentMembers.length > 0;
+    !lower.includes('ifa') &&
+    !lower.includes('association');
 
   let contactSection = '';
-  if (isContactFollowUp) {
-    // Assume follow-up refers to the most recent member
-    const member = recentMembers[0];
-    contactSection = `\n\nRECENT MEMBER CONTACT:\n${member.businessName}\n${member.address ? `Address: ${member.address}` : ''}\n${member.phone ? `Phone: ${member.phone}` : ''}`;
+  let recentMembers: IfaMember[] = [];
+
+  if (isContactFollowUp && sessionId) {
+    // Try to get recent member results from session state
+    const recentResult = await getRecentMemberResult(sessionId);
+    if (recentResult && recentResult.members.length > 0) {
+      recentMembers = recentResult.members;
+      const member = recentMembers[0];
+      contactSection = `\n\nRECENT MEMBER SEARCH RESULT:\n${member.businessName}\n${member.address ? `Address: ${member.address}` : ''}\n${member.phone ? `Phone: ${member.phone}` : ''}`;
+    }
+  }
+
+  // Resolve knowledge for the current query
+  const knowledge = await resolveIfaKnowledge({ text: lastUserMessage, recentMembers });
+
+  // If this was a member search with results, save them for follow-ups
+  let membersToSave: IfaMember[] | undefined;
+  let searchType: string | undefined;
+  let searchQuery: string | undefined;
+
+  if (knowledge.category === 'member' && knowledge.members && knowledge.members.length > 0) {
+    membersToSave = knowledge.members;
+    searchType = knowledge.searchType;
+    searchQuery = knowledge.searchQuery;
   }
 
   // Organize by category
@@ -57,7 +80,12 @@ async function buildIfaKnowledgeContext(
   sections.push(knowledge.text);
   if (contactSection) sections.push(contactSection);
 
-  return sections.join('\n\n');
+  return {
+    knowledge: sections.join('\n\n'),
+    membersToSave,
+    searchType,
+    searchQuery,
+  };
 }
 
 /**
@@ -67,19 +95,15 @@ async function buildIfaKnowledgeContext(
 export async function runIFAConversation(
   input: RunIfaConversationInput
 ): Promise<IfaConversationResult> {
-  const { messages, context } = input;
+  const { messages, context, sessionId } = input;
 
   try {
-    // Extract recent member results from conversation history (simple heuristic)
-    const recentMembers: IfaMember[] = [];
-    for (const msg of messages) {
-      if (msg.role === 'assistant' && msg.content.includes('IFA members')) {
-        // This is a simplified extraction; in production, parse structured results
-        // For now, we rely on the knowledge layer to provide context
-      }
-    }
+    const { knowledge, membersToSave, searchType, searchQuery } = await buildIfaKnowledgeContext(messages, sessionId);
 
-    const knowledge = await buildIfaKnowledgeContext(messages, recentMembers);
+    // Save member search results for follow-ups
+    if (sessionId && membersToSave && membersToSave.length > 0 && searchType && searchQuery) {
+      await saveMemberSearchResult(sessionId, membersToSave, searchType as any, searchQuery);
+    }
 
     const systemPrompt = IFA_ASSISTANT_PROMPT.replace('{BUSINESS_NAME}', context.businessName)
       .replace('{TIMEZONE}', context.timezone)

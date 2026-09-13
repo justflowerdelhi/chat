@@ -815,9 +815,14 @@ async function handleIfaMessage(
     phoneNumberId: channel.phoneNumberId,
   });
 
+  // Create or get session for conversation state
+  // IFA is association-wide, so use a fixed userId (0) for IFA sessions
+  const sessionId = await getOrCreateWhatsAppSession(message.from, 0);
+
   const result = await runIFAConversation({
     messages: [{ role: "user", content: incomingText }],
     context: channel,
+    sessionId,
   });
 
   await sendWhatsAppText(message.from, result.reply, sender);

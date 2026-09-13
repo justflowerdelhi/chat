@@ -23,19 +23,23 @@ import { getIfaMembershipInfo } from './membership';
 export interface IfaQuery {
   text: string;
   category?: 'member' | 'leadership' | 'events' | 'membership' | 'general';
+  recentMembers?: IfaMember[];
 }
 
 export interface IfaKnowledgeContext {
   text: string;
   category: string;
   source: string;
+  members?: IfaMember[];
+  searchType?: 'name' | 'city' | 'pincode' | 'nearest';
+  searchQuery?: string;
 }
 
 /**
  * Detect the likely category of a user query.
  * Improved keyword-based detection for natural language.
  */
-function detectQueryCategory(text: string): IfaQuery['category'] {
+export function detectQueryCategory(text: string): IfaQuery['category'] {
   const lower = text.toLowerCase();
 
   // Events - event-related queries (highest priority)
@@ -56,12 +60,31 @@ function detectQueryCategory(text: string): IfaQuery['category'] {
     return 'events';
   }
 
+  // Membership - membership-related queries (check before general member queries)
+  if (
+    lower.includes('join') ||
+    lower.includes('membership') ||
+    lower.includes('member fee') ||
+    lower.includes('fee') ||
+    lower.includes('benefit') ||
+    lower.includes('eligible') ||
+    lower.includes('eligible categories') ||
+    lower.includes('renew') ||
+    lower.includes('how much') ||
+    lower.includes('cost') ||
+    lower.includes('price') ||
+    lower.includes('who can become') ||
+    lower.includes('who can join')
+  ) {
+    return 'membership';
+  }
+
   // Member search - for specific member queries
   if (
     lower.includes('find') ||
     lower.includes('search') ||
     (lower.includes('florist') && !lower.includes('ifa meet')) ||
-    (lower.includes('member') && !lower.includes('membership')) ||
+    (lower.includes('member') && !lower.includes('membership') && !lower.includes('who can')) ||
     lower.includes('nearest') ||
     lower.includes('near') ||
     lower.includes('city') ||
@@ -71,10 +94,28 @@ function detectQueryCategory(text: string): IfaQuery['category'] {
     return 'member';
   }
 
-  // Member contact details (phone/address for a specific member)
+  // Member contact details (phone/address for a specific member/business)
+  // Patterns: "contact number of [name]", "phone number for [name]", "address of [name]", etc.
+  // Also: "contact [name]", "phone [name]", "address [name]"
   if (
     (lower.includes('contact') || lower.includes('phone') || lower.includes('address')) &&
-    (lower.includes('florist') || lower.includes('member') || lower.includes('shop') || lower.includes('business'))
+    (lower.includes(' of ') || lower.includes(' for ') || lower.includes(' about ') ||
+     (lower.includes('contact') && lower.match(/contact\s+[a-z]/i)) ||
+     (lower.includes('phone') && lower.match(/phone\s+[a-z]/i)) ||
+     (lower.includes('address') && lower.match(/address\s+[a-z]/i)))
+  ) {
+    // Exclude IFA-specific contact queries
+    if (lower.includes('ifa') || lower.includes('association')) {
+      return 'general';
+    }
+    return 'member';
+  }
+
+  // "Tell me about [name]" - member query unless it's about IFA
+  if (
+    (lower.includes('tell me about') || lower.includes('about ')) &&
+    !lower.includes('ifa') &&
+    !lower.includes('association')
   ) {
     return 'member';
   }
@@ -96,34 +137,18 @@ function detectQueryCategory(text: string): IfaQuery['category'] {
     return 'leadership';
   }
 
-  // Membership - membership-related queries
-  if (
-    lower.includes('join') ||
-    lower.includes('membership') ||
-    lower.includes('member fee') ||
-    lower.includes('fee') ||
-    lower.includes('benefit') ||
-    lower.includes('eligible') ||
-    lower.includes('eligible categories') ||
-    lower.includes('renew') ||
-    lower.includes('how much') ||
-    lower.includes('cost') ||
-    lower.includes('price')
-  ) {
-    return 'membership';
-  }
-
   // General - what is IFA, contact, about
+  // Note: contact queries are handled above for member-specific cases
   if (
     lower.includes('what is') ||
     lower.includes('about ifa') ||
     lower.includes('mission') ||
     lower.includes('vision') ||
     lower.includes('founded') ||
-    lower.includes('contact') ||
-    lower.includes('email') ||
-    lower.includes('phone') ||
-    lower.includes('address') ||
+    (lower.includes('contact') && !lower.match(/contact\s+\w+/i)) ||
+    (lower.includes('email') && !lower.includes('@')) ||
+    (lower.includes('phone') && !lower.match(/phone\s+\w+/i)) ||
+    (lower.includes('address') && !lower.match(/address\s+\w+/i)) ||
     lower.includes('website')
   ) {
     return 'general';
@@ -136,8 +161,37 @@ function detectQueryCategory(text: string): IfaQuery['category'] {
 /**
  * Handle member search queries.
  */
-async function handleMemberQuery(text: string): Promise<IfaKnowledgeContext> {
+async function handleMemberQuery(text: string, recentMembers?: IfaMember[]): Promise<IfaKnowledgeContext> {
   const lower = text.toLowerCase();
+
+  // Check for contact follow-up on recent members
+  if (
+    recentMembers && recentMembers.length > 0 &&
+    (lower.includes('phone') || lower.includes('address') || lower.includes('contact') || lower.includes('number')) &&
+    !lower.includes('ifa') && !lower.includes('association')
+  ) {
+    // Extract member name from query if specified
+    const nameMatch = text.match(/(?:for|of|about)\s+(.+)/i);
+    if (nameMatch) {
+      const queryName = nameMatch[1].trim().toLowerCase();
+      const matchedMember = recentMembers.find(m => m.businessName.toLowerCase().includes(queryName));
+      if (matchedMember) {
+        return {
+          text: formatMemberContact(matchedMember),
+          category: 'member',
+          source: 'session',
+          members: [matchedMember],
+        };
+      }
+    }
+    // Default to first recent member
+    return {
+      text: formatMemberContact(recentMembers[0]),
+      category: 'member',
+      source: 'session',
+      members: recentMembers,
+    };
+  }
 
   // Nearest florist / location-based
   if (
@@ -154,12 +208,37 @@ async function handleMemberQuery(text: string): Promise<IfaKnowledgeContext> {
     const cityMatch = text.match(/(?:in|at|near)\s+([A-Za-z\s]+)/i);
     const city = cityMatch ? cityMatch[1].trim() : '';
 
-    if (pincode && city) {
+    if (pincode) {
+      // Pincode-only search: try database first
+      if (!city) {
+        const dbResult = await searchMembersByPincode(pincode);
+        if (dbResult.members.length > 0) {
+          return {
+            text: formatMemberList(dbResult.members, `in PIN code ${pincode}`),
+            category: 'member',
+            source: dbResult.source,
+            members: dbResult.members,
+            searchType: 'pincode',
+            searchQuery: pincode,
+          };
+        }
+        // No database results, ask for city for Floritribe search
+        return {
+          text: `I found IFA members in my database for PIN code ${pincode}, but to search for the nearest florists via location, I need the city name. Please provide the city (e.g., "florists near ${pincode} Delhi").`,
+          category: 'member',
+          source: 'none',
+        };
+      }
+
+      // Both pincode and city: use Floritribe
       const result = await searchNearestFlorists(city, pincode);
       return {
         text: formatMemberList(result.members, `near ${pincode}, ${city}`),
         category: 'member',
         source: result.source,
+        members: result.members,
+        searchType: 'nearest',
+        searchQuery: `${city} ${pincode}`,
       };
     }
   }
@@ -173,6 +252,9 @@ async function handleMemberQuery(text: string): Promise<IfaKnowledgeContext> {
       text: formatMemberList(result.members, `matching "${name}"`),
       category: 'member',
       source: result.source,
+      members: result.members,
+      searchType: 'name',
+      searchQuery: name,
     };
   }
 
@@ -185,6 +267,9 @@ async function handleMemberQuery(text: string): Promise<IfaKnowledgeContext> {
       text: formatMemberList(result.members, `in ${city}`),
       category: 'member',
       source: result.source,
+      members: result.members,
+      searchType: 'city',
+      searchQuery: city,
     };
   }
 
@@ -434,16 +519,7 @@ async function handleGeneralQuery(text: string): Promise<IfaKnowledgeContext> {
   const info = await getIfaGeneralInfo();
   const lower = text.toLowerCase();
 
-  // What is IFA query
-  if (lower.includes('what is') || lower.includes('about ifa')) {
-    return {
-      text: `${info.description || 'India Florist Association (IFA) is India\'s leading floral industry organization.'}\n\nFounded: ${info.founded}\nMission: ${info.mission}\nVision: ${info.vision}\n\nWebsite: ${info.website}`,
-      category: 'general',
-      source: 'website',
-    };
-  }
-
-  // Contact query
+  // Contact query - check before "what is" to handle specific contact requests
   if (lower.includes('contact') || lower.includes('email') || lower.includes('phone') || lower.includes('address')) {
     const parts: string[] = [];
     if (info.contactEmail) parts.push(`Email: ${info.contactEmail}`);
@@ -452,6 +528,15 @@ async function handleGeneralQuery(text: string): Promise<IfaKnowledgeContext> {
     if (info.website) parts.push(`Website: ${info.website}`);
     return {
       text: parts.join('\n'),
+      category: 'general',
+      source: 'website',
+    };
+  }
+
+  // What is IFA query
+  if (lower.includes('what is') || lower.includes('about ifa')) {
+    return {
+      text: `${info.description || 'India Florist Association (IFA) is India\'s leading floral industry organization.'}\n\nFounded: ${info.founded}\nMission: ${info.mission}\nVision: ${info.vision}\n\nWebsite: ${info.website}`,
       category: 'general',
       source: 'website',
     };
@@ -491,7 +576,7 @@ export async function resolveIfaKnowledge(
 
   switch (category) {
     case 'member':
-      return handleMemberQuery(query.text);
+      return handleMemberQuery(query.text, query.recentMembers);
     case 'leadership':
       return handleLeadershipQuery(query.text);
     case 'events':
@@ -502,7 +587,7 @@ export async function resolveIfaKnowledge(
       return handleGeneralQuery(query.text);
     default:
       return {
-        text: 'I can help with IFA membership, member search, events, leadership, and general information. What would you like to know?',
+        text: 'I could not understand your query. Please try asking about IFA members, leadership, events, membership, or general information.',
         category: 'general',
         source: 'none',
       };

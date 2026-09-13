@@ -121,6 +121,7 @@ export async function getMemberById(memberId: number): Promise<IfaMember | null>
 /**
  * Search nearest IFA florists via Floritribe API.
  * Reuses the existing locator infrastructure.
+ * memberId is optional for Floritribe results - preserve all available fields.
  */
 export async function searchNearestFlorists(
   city: string,
@@ -129,16 +130,15 @@ export async function searchNearestFlorists(
 ): Promise<MemberSearchResult> {
   const florists = await getNearestFlorists({ city, pincode, limit });
 
-  const members: IfaMember[] = florists
-    .filter((f) => f.memberId !== undefined)
-    .map((f) => ({
-      memberId: f.memberId!,
-      businessName: f.name,
-      address: f.address,
-      pincode: f.pincode,
-      phone: f.phone,
-      businessType: f.businessType,
-    }));
+  const members: IfaMember[] = florists.map((f) => ({
+    memberId: f.memberId, // Optional - can be undefined for Floritribe results
+    businessName: f.name,
+    address: f.address,
+    pincode: f.pincode,
+    phone: f.phone,
+    businessType: f.businessType,
+    googleMapsUrl: f.slug ? `https://floritribe.com/florist/${f.slug}` : undefined,
+  }));
 
   return {
     members,

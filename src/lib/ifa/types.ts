@@ -3,7 +3,7 @@
  */
 
 export interface IfaMember {
-  memberId: number;
+  memberId?: number; // Optional for Floritribe results
   businessName: string;
   address?: string;
   city?: string;

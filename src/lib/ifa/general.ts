@@ -18,6 +18,7 @@ export async function getIfaGeneralInfo(): Promise<IfaGeneralInfo & { isStale: b
     vision: data.vision,
     contactEmail: data.contactEmail,
     contactPhone: data.contactPhone,
+    address: data.address,
     website: data.website,
     isStale: data.isStale,
   };
