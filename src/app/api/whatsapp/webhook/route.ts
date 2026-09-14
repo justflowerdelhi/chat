@@ -26,6 +26,11 @@ import {
   saveLocatorState,
 } from "@/lib/locatorSession";
 import type { LocatorSessionState } from "@/lib/locatorSession";
+import {
+  getIfaSessionState,
+  saveIfaSessionState,
+} from "@/lib/ifaSession";
+import type { IfaSessionState } from "@/lib/ifaSession";
 import { runIFAConversation } from "@/lib/ifaConversation";
 import {
   dispatchWhatsAppChannel,
@@ -820,11 +825,211 @@ async function handleIfaMessage(
   const ifaSystemMemberId = getIfaSystemMemberId();
   const sessionId = await getOrCreateWhatsAppSession(message.from, ifaSystemMemberId);
 
+  // Check for nearest florist intent - use proven locator logic
+  const isLocatorIntent = detectNearestFloristIntent(incomingText);
+  const rawIfaState = await getIfaSessionState(sessionId);
+  let ifaState: IfaSessionState = rawIfaState || {};
+  const locationUpdate = extractLocationFromMessage(incomingText);
+
+  // Handle nearest florist queries using the proven locator flow
+  if (isLocatorIntent || ifaState.pending) {
+    if (isLocatorIntent) {
+      // Fresh locator request - preserve member results but reset location state
+      ifaState = {
+        lastMemberResult: ifaState.lastMemberResult,
+        pending: false,
+        collectedCity: undefined,
+        collectedPincode: undefined,
+      };
+    }
+
+    if (
+      ifaState.pending &&
+      !isLocatorIntent &&
+      !hasLocationInformation(incomingText)
+    ) {
+      // Customer did not provide location - reset and fall through to normal IFA flow
+      await saveIfaSessionState(sessionId, {
+        lastMemberResult: ifaState.lastMemberResult,
+      });
+      ifaState = { lastMemberResult: ifaState.lastMemberResult };
+    } else {
+      const city = locationUpdate.city || ifaState.collectedCity;
+      const pincode = locationUpdate.pincode || ifaState.collectedPincode;
+
+      // If this is a fresh locator intent with no location, ask for location
+      if (isLocatorIntent && !city && !pincode) {
+        const reply = buildMissingLocationMessage({});
+
+        await db.query(
+          'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+          [sessionId, 'user', incomingText]
+        );
+        await db.query(
+          'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+          [sessionId, 'assistant', reply]
+        );
+        await db.query(
+          'UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1',
+          [sessionId]
+        );
+
+        await sendWhatsAppText(message.from, reply, sender);
+
+        await saveIfaSessionState(sessionId, {
+          ...ifaState,
+          pending: true,
+        });
+
+        return;
+      }
+
+      if (city && pincode) {
+        // Both city and pincode - call the locator
+        try {
+          const florists = await getNearestFlorists({
+            city,
+            pincode,
+            limit: 3,
+          });
+
+          const reply = formatFloristList(florists, city, pincode);
+
+          // Save IFA conversation messages
+          await db.query(
+            'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+            [sessionId, 'user', incomingText]
+          );
+          await db.query(
+            'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+            [sessionId, 'assistant', reply]
+          );
+          await db.query(
+            'UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1',
+            [sessionId]
+          );
+
+          await sendWhatsAppText(message.from, reply, sender);
+
+          // Clear location state but preserve member results
+          await saveIfaSessionState(sessionId, {
+            lastMemberResult: ifaState.lastMemberResult,
+          });
+
+          return;
+        } catch (error) {
+          console.error("IFA locator error:", error);
+          const fallbackReply =
+            "Sorry, I'm unable to check the nearest florists right now. Please try again in a little while.";
+
+          await db.query(
+            'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+            [sessionId, 'user', incomingText]
+          );
+          await db.query(
+            'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+            [sessionId, 'assistant', fallbackReply]
+          );
+          await db.query(
+            'UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1',
+            [sessionId]
+          );
+
+          await sendWhatsAppText(message.from, fallbackReply, sender);
+
+          // Keep pending state for retry
+          await saveIfaSessionState(sessionId, {
+            ...ifaState,
+            pending: true,
+            collectedCity: city,
+            collectedPincode: pincode,
+          });
+
+          return;
+        }
+      }
+
+      if (pincode && !city) {
+        // Have pincode, need city
+        const reply = "Thanks 😊 Which city is this PIN code in?";
+
+        await db.query(
+          'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+          [sessionId, 'user', incomingText]
+        );
+        await db.query(
+          'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+          [sessionId, 'assistant', reply]
+        );
+        await db.query(
+          'UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1',
+          [sessionId]
+        );
+
+        await sendWhatsAppText(message.from, reply, sender);
+
+        await saveIfaSessionState(sessionId, {
+          ...ifaState,
+          pending: true,
+          collectedPincode: pincode,
+        });
+
+        return;
+      }
+
+      if (city && !pincode) {
+        // Have city, need pincode
+        const reply =
+          "Sure 😊 Please share the PIN code so I can find the nearest IFA florists.";
+
+        await db.query(
+          'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+          [sessionId, 'user', incomingText]
+        );
+        await db.query(
+          'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+          [sessionId, 'assistant', reply]
+        );
+        await db.query(
+          'UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1',
+          [sessionId]
+        );
+
+        await sendWhatsAppText(message.from, reply, sender);
+
+        await saveIfaSessionState(sessionId, {
+          ...ifaState,
+          pending: true,
+          collectedCity: city,
+        });
+
+        return;
+      }
+    }
+  }
+
+  // Normal IFA conversation flow (non-locator queries)
   const result = await runIFAConversation({
     messages: [{ role: "user", content: incomingText }],
     context: channel,
     sessionId,
   });
+
+  // Save IFA conversation messages to chat_messages for history
+  await db.query(
+    'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+    [sessionId, 'user', incomingText]
+  );
+
+  await db.query(
+    'INSERT INTO chat_messages (session_id, role, content) VALUES ($1, $2, $3)',
+    [sessionId, 'assistant', result.reply]
+  );
+
+  await db.query(
+    'UPDATE chat_sessions SET updated_at = NOW() WHERE id = $1',
+    [sessionId]
+  );
 
   await sendWhatsAppText(message.from, result.reply, sender);
 

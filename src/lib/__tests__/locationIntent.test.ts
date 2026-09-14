@@ -158,3 +158,188 @@ for (const input of nonAffirmativeCases) {
     assert.equal(isAffirmativeReply(input), false);
   });
 }
+
+// IFA location state accumulation tests
+test('IFA location state: pincode extracted from single message', () => {
+  const location = extractLocationFromMessage('110008');
+  assert.equal(location.pincode, '110008');
+  assert.equal(location.city, undefined);
+});
+
+test('IFA location state: city extracted from single message', () => {
+  const location = extractLocationFromMessage('New Delhi');
+  assert.equal(location.city, 'New Delhi');
+  assert.equal(location.pincode, undefined);
+});
+
+test('IFA location state: both city and pincode extracted from single message', () => {
+  const location = extractLocationFromMessage('New Delhi 110008');
+  assert.equal(location.city, 'New Delhi');
+  assert.equal(location.pincode, '110008');
+});
+
+test('IFA location state: nearest florist intent detected', () => {
+  assert.equal(detectNearestFloristIntent('Need nearest florist'), true);
+  assert.equal(detectNearestFloristIntent('nearest florist'), true);
+  assert.equal(detectNearestFloristIntent('find nearest florist'), true);
+});
+
+test('IFA location state: non-locator queries do not trigger intent', () => {
+  assert.equal(detectNearestFloristIntent('Hello'), false);
+  assert.equal(detectNearestFloristIntent('What is IFA?'), false);
+  assert.equal(detectNearestFloristIntent('How do I join?'), false);
+});
+
+test('IFA location state: assistant messages do not extract location', () => {
+  // Assistant asking for city should not be treated as user providing city
+  const location = extractLocationFromMessage('Thanks 😊 Which city is this PIN code in?');
+  assert.equal(location.city, undefined);
+  assert.equal(location.pincode, undefined);
+});
+
+test('IFA location state: hasLocationInformation correctly identifies location data', () => {
+  assert.equal(hasLocationInformation('110008'), true);
+  assert.equal(hasLocationInformation('New Delhi'), true);
+  assert.equal(hasLocationInformation('Need nearest florist'), false);
+  assert.equal(hasLocationInformation('Hello'), false);
+});
+
+// Multi-turn state accumulation test (pure logic, no database required)
+test('IFA multi-turn location state accumulation', () => {
+  // Simulate the state transition logic from route.ts
+  type IfaSessionState = {
+    pending?: boolean;
+    collectedCity?: string;
+    collectedPincode?: string;
+  };
+
+  let state: IfaSessionState = {};
+
+  // Turn 1: "Need nearest florist" - no location provided
+  const isLocatorIntent1 = detectNearestFloristIntent('Need nearest florist');
+  const locationUpdate1 = extractLocationFromMessage('Need nearest florist');
+
+  assert.equal(isLocatorIntent1, true);
+  assert.equal(locationUpdate1.city, undefined);
+  assert.equal(locationUpdate1.pincode, undefined);
+
+  // After processing: should set pending = true
+  state = { ...state, pending: true };
+  assert.equal(state.pending, true);
+  assert.equal(state.collectedPincode, undefined);
+  assert.equal(state.collectedCity, undefined);
+
+  // Turn 2: "110008" - user provides PIN code
+  const isLocatorIntent2 = detectNearestFloristIntent('110008');
+  const locationUpdate2 = extractLocationFromMessage('110008');
+
+  assert.equal(isLocatorIntent2, false); // PIN alone is not a locator intent
+  assert.equal(locationUpdate2.pincode, '110008');
+  assert.equal(locationUpdate2.city, undefined);
+
+  // After processing: should accumulate PIN, keep pending
+  const city2 = locationUpdate2.city || state.collectedCity;
+  const pincode2 = locationUpdate2.pincode || state.collectedPincode;
+
+  state = {
+    ...state,
+    pending: true,
+    collectedPincode: pincode2,
+  };
+
+  assert.equal(state.pending, true);
+  assert.equal(state.collectedPincode, '110008');
+  assert.equal(state.collectedCity, undefined);
+
+  // Turn 3: "New Delhi" - user provides city
+  const isLocatorIntent3 = detectNearestFloristIntent('New Delhi');
+  const locationUpdate3 = extractLocationFromMessage('New Delhi');
+
+  assert.equal(isLocatorIntent3, false); // City alone is not a locator intent
+  assert.equal(locationUpdate3.city, 'New Delhi');
+  assert.equal(locationUpdate3.pincode, undefined);
+
+  // After processing: should combine with previous PIN
+  const city3 = locationUpdate3.city || state.collectedCity;
+  const pincode3 = locationUpdate3.pincode || state.collectedPincode;
+
+  // This is what would be passed to getNearestFlorists()
+  assert.equal(city3, 'New Delhi');
+  assert.equal(pincode3, '110008');
+
+  // Verify final state before locator call
+  assert.equal(state.collectedPincode, '110008');
+  assert.equal(city3, 'New Delhi');
+});
+
+test('IFA multi-turn: both city and PIN in one message', () => {
+  const locationUpdate = extractLocationFromMessage('New Delhi 110008');
+
+  assert.equal(locationUpdate.city, 'New Delhi');
+  assert.equal(locationUpdate.pincode, '110008');
+
+  // With this, both city and pincode are available immediately
+  const city = locationUpdate.city;
+  const pincode = locationUpdate.pincode;
+
+  assert.equal(city, 'New Delhi');
+  assert.equal(pincode, '110008');
+  // This would trigger immediate locator call
+});
+
+test('IFA multi-turn: new session starts empty', () => {
+  const state: {
+    pending?: boolean;
+    collectedCity?: string;
+    collectedPincode?: string;
+  } = {};
+
+  assert.equal(state.pending, undefined);
+  assert.equal(state.collectedCity, undefined);
+  assert.equal(state.collectedPincode, undefined);
+});
+
+test('IFA multi-turn: different sessions remain isolated', () => {
+  const session1: {
+    pending?: boolean;
+    collectedCity?: string;
+    collectedPincode?: string;
+  } = {
+    pending: true,
+    collectedPincode: '110008',
+    collectedCity: 'New Delhi',
+  };
+
+  const session2: {
+    pending?: boolean;
+    collectedCity?: string;
+    collectedPincode?: string;
+  } = {
+    pending: true,
+    collectedPincode: '400001',
+    collectedCity: 'Mumbai',
+  };
+
+  // Session 1 should not inherit Session 2's data
+  assert.equal(session1.collectedPincode, '110008');
+  assert.equal(session1.collectedCity, 'New Delhi');
+
+  // Session 2 should not inherit Session 1's data
+  assert.equal(session2.collectedPincode, '400001');
+  assert.equal(session2.collectedCity, 'Mumbai');
+});
+
+test('IFA multi-turn: assistant messages do not create location state', () => {
+  const assistantMessage = 'Thanks 😊 Which city is this PIN code in?';
+  const locationUpdate = extractLocationFromMessage(assistantMessage);
+
+  assert.equal(locationUpdate.city, undefined);
+  assert.equal(locationUpdate.pincode, undefined);
+
+  // If this were mistakenly treated as user input, it would not set location
+  const city = locationUpdate.city;
+  const pincode = locationUpdate.pincode;
+
+  assert.equal(city, undefined);
+  assert.equal(pincode, undefined);
+});

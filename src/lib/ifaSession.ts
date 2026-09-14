@@ -10,6 +10,10 @@ export interface IfaMemberResultSnapshot {
 
 export interface IfaSessionState {
   lastMemberResult?: IfaMemberResultSnapshot;
+  // Location state for nearest florist queries (reuses proven locator logic)
+  pending?: boolean;
+  collectedCity?: string;
+  collectedPincode?: string;
 }
 
 const RESULT_TTL_MS = 15 * 60 * 1000; // 15 minutes
