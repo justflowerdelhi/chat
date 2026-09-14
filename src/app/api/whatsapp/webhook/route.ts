@@ -1,7 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { runReceptionConversation } from "@/lib/receptionConversation";
-import { getWhatsAppConfig } from "@/lib/whatsappConfig";
+import { getWhatsAppConfig, getIfaSystemMemberId } from "@/lib/whatsappConfig";
 import type { ReceptionContext } from "@/lib/receptionContext";
 import db from "@/lib/db";
 import { DEMO_CATALOGUE, type DemoCatalogueProduct } from "@/lib/demoCatalogue";
@@ -816,8 +816,9 @@ async function handleIfaMessage(
   });
 
   // Create or get session for conversation state
-  // IFA is association-wide, so use a fixed userId (0) for IFA sessions
-  const sessionId = await getOrCreateWhatsAppSession(message.from, 0);
+  // IFA is association-wide, use the IFA system member ID for session persistence
+  const ifaSystemMemberId = getIfaSystemMemberId();
+  const sessionId = await getOrCreateWhatsAppSession(message.from, ifaSystemMemberId);
 
   const result = await runIFAConversation({
     messages: [{ role: "user", content: incomingText }],

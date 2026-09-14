@@ -10,6 +10,7 @@ import {
   type UnknownChannelContext,
   type WhatsAppAccount,
 } from '../whatsappChannel';
+import { getIfaSystemMemberId } from '../whatsappConfig';
 
 const IFA_ID = '1331287183397011';
 const FLORIST_ID = '1237582446108448';
@@ -184,4 +185,41 @@ test('resolveIfaSender returns null when nothing is configured', async () => {
   const sender = await resolveIfaSender(async () => undefined);
   assert.equal(sender, null);
   clearChannelEnv();
+});
+
+test('getIfaSystemMemberId returns configured positive integer', () => {
+  setEnv('IFA_SYSTEM_MEMBER_ID', '2');
+  assert.equal(getIfaSystemMemberId(), 2);
+  delete process.env.IFA_SYSTEM_MEMBER_ID;
+});
+
+test('getIfaSystemMemberId throws when environment variable is missing', () => {
+  delete process.env.IFA_SYSTEM_MEMBER_ID;
+  assert.throws(
+    () => getIfaSystemMemberId(),
+    /IFA_SYSTEM_MEMBER_ID environment variable is required/
+  );
+});
+
+test('getIfaSystemMemberId throws when value is not a positive integer', () => {
+  setEnv('IFA_SYSTEM_MEMBER_ID', '0');
+  assert.throws(
+    () => getIfaSystemMemberId(),
+    /must be a positive integer/
+  );
+  delete process.env.IFA_SYSTEM_MEMBER_ID;
+
+  setEnv('IFA_SYSTEM_MEMBER_ID', '-1');
+  assert.throws(
+    () => getIfaSystemMemberId(),
+    /must be a positive integer/
+  );
+  delete process.env.IFA_SYSTEM_MEMBER_ID;
+
+  setEnv('IFA_SYSTEM_MEMBER_ID', 'invalid');
+  assert.throws(
+    () => getIfaSystemMemberId(),
+    /must be a positive integer/
+  );
+  delete process.env.IFA_SYSTEM_MEMBER_ID;
 });
