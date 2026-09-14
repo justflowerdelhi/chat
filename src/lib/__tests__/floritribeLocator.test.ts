@@ -198,6 +198,56 @@ test('formatFloristList can include address details', () => {
   assert.ok(output.includes('Just Flowers — 0.8 km'));
   assert.ok(output.includes('123 Market Road'));
   assert.ok(!output.includes('Phone:'));
+  assert.ok(output.includes('Would you like the contact details'));
+});
+
+test('formatFloristList includes phone numbers when includePhone is true', () => {
+  const florists = [
+    {
+      name: 'Just Flowers',
+      distanceKm: 0.8,
+      distanceText: '0.8 km',
+      businessType: 'Retail',
+      address: '123 Market Road',
+      phone: '+91-9876543210',
+    },
+    {
+      name: 'Rose n petals',
+      distanceKm: 2.5,
+      distanceText: '2.5 km',
+      businessType: 'Retail',
+      address: '456 Garden Lane',
+      phone: '+91-9876543211',
+    },
+  ];
+
+  const output = formatFloristList(florists as any, 'New Delhi', '110060', true, true);
+  assert.ok(output.includes('Just Flowers — 0.8 km'));
+  assert.ok(output.includes('📍 123 Market Road'));
+  assert.ok(output.includes('📞 +91-9876543210'));
+  assert.ok(output.includes('Rose n petals — 2.5 km'));
+  assert.ok(output.includes('📍 456 Garden Lane'));
+  assert.ok(output.includes('📞 +91-9876543211'));
+  // No follow-up question when phone numbers are included
+  assert.ok(!output.includes('Would you like the contact details'));
+});
+
+test('formatFloristList shows fallback for missing phone when includePhone is true', () => {
+  const florists = [
+    {
+      name: 'Just Flowers',
+      distanceKm: 0.8,
+      distanceText: '0.8 km',
+      businessType: 'Retail',
+      address: '123 Market Road',
+    },
+  ];
+
+  const output = formatFloristList(florists as any, 'New Delhi', '110060', true, true);
+  assert.ok(output.includes('Just Flowers — 0.8 km'));
+  assert.ok(output.includes('📍 123 Market Road'));
+  assert.ok(output.includes('📞 Contact number unavailable'));
+  assert.ok(!output.includes('Would you like the contact details'));
 });
 
 test('findFloristByNameOrNearest returns exact name match', () => {

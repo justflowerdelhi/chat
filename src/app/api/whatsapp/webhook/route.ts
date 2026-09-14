@@ -893,7 +893,7 @@ async function handleIfaMessage(
             limit: 3,
           });
 
-          const reply = formatFloristList(florists, city, pincode);
+          const reply = formatFloristList(florists, city, pincode, true, true);
 
           // Save IFA conversation messages
           await db.query(

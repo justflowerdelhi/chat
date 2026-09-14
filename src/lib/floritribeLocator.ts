@@ -389,7 +389,8 @@ export function formatFloristList(
   florists: FloritribeFlorist[],
   city: string,
   pincode: string,
-  includeDetails = true
+  includeDetails = true,
+  includePhone = false
 ): string {
   if (florists.length === 0) {
     return "Sorry 😊 I couldn't find an IFA florist registered near that location. Would you like me to check another PIN code?";
@@ -400,13 +401,26 @@ export function formatFloristList(
     const parts: string[] = [
       `${index + 1}. ${florist.name} — ${florist.distanceText}`,
     ];
-    if (includeDetails && florist.address) {
-      parts.push(`   ${florist.address}`);
+    if (includeDetails) {
+      if (florist.address) {
+        parts.push(`   📍 ${florist.address}`);
+      } else {
+        parts.push('   📍 Address not available');
+      }
+      if (includePhone) {
+        if (florist.phone) {
+          parts.push(`   📞 ${florist.phone}`);
+        } else {
+          parts.push('   📞 Contact number unavailable');
+        }
+      }
     }
     return parts.join('\n');
   });
 
-  return header + lines.join('\n') + '\n\nWould you like the contact details of the nearest one?';
+  // Only add the follow-up question if phone numbers are not included
+  const footer = includePhone ? '' : '\n\nWould you like the contact details of the nearest one?';
+  return header + lines.join('\n') + footer;
 }
 
 export function findFloristByNameOrNearest(
