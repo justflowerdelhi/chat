@@ -69,6 +69,154 @@ test('does not invent location for "nearest florist"', () => {
   assert.equal(location.pincode, undefined);
 });
 
+// Generic city extraction tests for cities not in CITY_NAMES
+test('generic city extraction: "800003, Patna"', () => {
+  const location = extractLocationFromMessage('800003, Patna');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "800003 Patna"', () => {
+  const location = extractLocationFromMessage('800003 Patna');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "Patna 800003"', () => {
+  const location = extractLocationFromMessage('Patna 800003');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "800003, patna" (lowercase)', () => {
+  const location = extractLocationFromMessage('800003, patna');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "nearest florist pincode 800003, patna"', () => {
+  const location = extractLocationFromMessage('nearest florist pincode 800003, patna');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "nearest florist pin 800003 Patna"', () => {
+  const location = extractLocationFromMessage('nearest florist pin 800003 Patna');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "Please find nearest florist in 800003, Patna"', () => {
+  const location = extractLocationFromMessage('Please find nearest florist in 800003, Patna');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "Can you find a florist near 800003 Patna?"', () => {
+  const location = extractLocationFromMessage('Can you find a florist near 800003 Patna?');
+  assert.equal(location.pincode, '800003');
+  // Explicit location phrasing "near 800003 Patna" is now supported
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "800003, Patna, Bihar" → extracts Patna', () => {
+  const location = extractLocationFromMessage('800003, Patna, Bihar');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "110008, New Delhi" (known city)', () => {
+  const location = extractLocationFromMessage('110008, New Delhi');
+  assert.equal(location.pincode, '110008');
+  assert.equal(location.city, 'New Delhi');
+});
+
+test('generic city extraction: pincode-only "110008"', () => {
+  const location = extractLocationFromMessage('110008');
+  assert.equal(location.pincode, '110008');
+  assert.equal(location.city, undefined);
+});
+
+test('generic city extraction: city-only "New Delhi"', () => {
+  const location = extractLocationFromMessage('New Delhi');
+  assert.equal(location.city, 'New Delhi');
+  assert.equal(location.pincode, undefined);
+});
+
+// Negative cases - should NOT extract city
+test('generic city extraction: "800003 India" → no city (country, not city)', () => {
+  const location = extractLocationFromMessage('800003 India');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, undefined);
+});
+
+test('generic city extraction: "800003 today" → no city', () => {
+  const location = extractLocationFromMessage('800003 today');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, undefined);
+});
+
+test('generic city extraction: "800003 please" → no city', () => {
+  const location = extractLocationFromMessage('800003 please');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, undefined);
+});
+
+test('generic city extraction: "PIN 800003 please" → no city', () => {
+  const location = extractLocationFromMessage('PIN 800003 please');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, undefined);
+});
+
+test('generic city extraction: "near 800003" → no city', () => {
+  const location = extractLocationFromMessage('near 800003');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, undefined);
+});
+
+test('generic city extraction: "florist 800003" → no city', () => {
+  const location = extractLocationFromMessage('florist 800003');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, undefined);
+});
+
+test('generic city extraction: "Need florist for 800003" → no city', () => {
+  const location = extractLocationFromMessage('Need florist for 800003');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, undefined);
+});
+
+test('generic city extraction: "800003 unknownword" → no city', () => {
+  const location = extractLocationFromMessage('800003 unknownword');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, undefined);
+});
+
+// Punctuation tests
+test('generic city extraction: "800003, Patna." (trailing period)', () => {
+  const location = extractLocationFromMessage('800003, Patna.');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "Patna - 800003" (dash separator)', () => {
+  const location = extractLocationFromMessage('Patna - 800003');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "(800003, Patna)" (parentheses)', () => {
+  const location = extractLocationFromMessage('(800003, Patna)');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
+test('generic city extraction: "800003 / Patna" (slash separator)', () => {
+  const location = extractLocationFromMessage('800003 / Patna');
+  assert.equal(location.pincode, '800003');
+  assert.equal(location.city, 'Patna');
+});
+
 test('builds missing city and pincode message', () => {
   const message = buildMissingLocationMessage({});
   assert.ok(message.includes('Which area or PIN code'));
